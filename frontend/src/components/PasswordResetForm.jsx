@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import api from "@/api";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
+import { ArrowLeft } from "lucide-react";
 
 const PasswordResetForm = () => {
   const [step, setStep] = useState(1);
@@ -74,19 +75,19 @@ const PasswordResetForm = () => {
           <div className="mt-10 sm:mx-auto sm:w-full sm:max-w-sm">
             <form onSubmit={handleSubmit(onSubmitEmail)}>
               <label className="block text-sm text-gray-500 dark:text-gray-300">
-                  Email address
-                </label>
-                <Input
-                  type="email"
-                  className="mt-2 block w-full placeholder-gray-400/70 rounded-lg border border-gray-200 bg-white px-5 py-2.5 text-gray-700 focus:border-blue-400 focus:outline-none focus:ring focus:ring-blue-300 focus:ring-opacity-40 dark:border-gray-600 dark:bg-gray-900 dark:text-gray-300 dark:focus:border-blue-300"
-                  placeholder="Enter your email..."
-                  {...register("email", { required: "Email is required" })}
-                />
-                {errors.email && (
-                  <p className="mt-3 text-xs text-red-400">
-                    {errors.email.message}
-                  </p>
-                )}
+                Email address
+              </label>
+              <Input
+                type="email"
+                className="mt-2 block w-full placeholder-gray-400/70 rounded-lg border border-gray-200 bg-white px-5 py-2.5 text-gray-700 focus:border-blue-400 focus:outline-none focus:ring focus:ring-blue-300 focus:ring-opacity-40 dark:border-gray-600 dark:bg-gray-900 dark:text-gray-300 dark:focus:border-blue-300"
+                placeholder="Enter your email..."
+                {...register("email", { required: "Email is required" })}
+              />
+              {errors.email && (
+                <p className="mt-3 text-xs text-red-400">
+                  {errors.email.message}
+                </p>
+              )}
               <Button type="submit" className="mt-3">
                 {loading ? "Loading..." : "Send Reset Code"}
               </Button>
@@ -116,8 +117,13 @@ const PasswordResetForm = () => {
                   </p>
                 )}
               </div>
-              <div className="flex justify-between">
-                <Button onClick={handlePrevStep} variant={"outline"} className="mt-3">
+              <div className="flex">
+                <Button
+                  onClick={handlePrevStep}
+                  variant={"outline"}
+                  className="mt-3 mr-3"
+                >
+                    <ArrowLeft className="flex-shrink-0 w-3 h-auto mr-2" />
                   Back
                 </Button>
                 <Button type="submit" className="mt-3">
@@ -150,8 +156,13 @@ const PasswordResetForm = () => {
                   </p>
                 )}
               </div>
-              <div className="flex justify-between">
-                <Button onClick={handlePrevStep} variant={"outline"} className="mt-3">
+              <div className="flex">
+                <Button
+                  onClick={handlePrevStep}
+                  variant={"outline"}
+                  className="mt-3 mr-3"
+                >
+                  <ArrowLeft className="flex-shrink-0 w-3 h-auto mr-2" />
                   Back
                 </Button>
                 <Button type="submit" className="mt-3">
