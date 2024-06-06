@@ -158,6 +158,7 @@ def reset_password():
         
         hashed_password = hashPassword(new_password)
         user.password = hashed_password
+        user.isEmailVerified = True
         user.reset_token = None  # Clear the reset token after successful reset
         user.reset_token_expiration = None  # Clear the reset token expiration
         db.session.commit()
