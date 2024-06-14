@@ -14,3 +14,9 @@ class User(db.Model):
     reset_token_expiration = db.Column(db.DateTime, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.now)
     updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
+
+class Recipe(db.Model):
+    id = db.Column(db.Integer, primary_key=True, unique=True, nullable=False, default=unique_id)
+    title = db.Column(db.String(120), nullable=False)
+    ingredients = db.Column(db.Text, nullable=False)
+    instructions = db.Column(db.Text, nullable=False)
