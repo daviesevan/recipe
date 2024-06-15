@@ -23,11 +23,13 @@ def create_app():
     from app.admin.subscriptions.routes import subscription_bp
     from app.admin.auth.routes import admin_bp
     from app.admin.dashboard.routes import dashboard_bp
+    from app.payments.routes import paymentBp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(subscription_bp)
     app.register_blueprint(admin_bp)
     app.register_blueprint(dashboard_bp)
+    app.register_blueprint(paymentBp)
 
     with app.app_context():
         # transfer_data()

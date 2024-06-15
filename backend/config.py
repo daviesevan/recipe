@@ -12,3 +12,4 @@ class ApplicationConfiguration:
     EDAMAM_API_URL = "https://api.edamam.com/search"
     EDAMAM_APP_ID = os.getenv("RECIPE_APP_ID")
     EDAMAM_API_KEY = os.getenv("RECIPE_API")
+    PAYSTACK_SECRET_KEY = os.environ.get('PAYSTACK_SECRET_KEY')

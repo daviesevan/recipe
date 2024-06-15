@@ -46,15 +46,22 @@ class Subscription(db.Model):
     plan = db.Column(db.String(20), nullable=False)
     search_limit = db.Column(db.Integer, nullable=False)
     price = db.Column(db.Float, nullable=False)
+    duration_days = db.Column(db.Integer, nullable=False, default=30)
 
     users = db.relationship('User', back_populates='subscription')
+    payments = db.relationship('Payment', back_populates='subscription') 
 
 class Payment(db.Model):
     __tablename__ = 'payment'
     id = db.Column(db.Integer, primary_key=True, unique=True, nullable=False, default=unique_id)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id', name='fk_payment_user'), nullable=False)
+    subscription_id = db.Column(db.Integer, db.ForeignKey('subscription.id', name='fk_payment_subscription'), nullable=False)
     amount = db.Column(db.Float, nullable=False)
     payment_date = db.Column(db.DateTime, default=datetime.now)
     payment_status = db.Column(db.String(50), nullable=False)
+    reference = db.Column(db.String(100), nullable=False, unique=True)
+    payment_deadline = db.Column(db.DateTime, nullable=False)
 
     user = db.relationship('User', back_populates='payments')
+    subscription = db.relationship('Subscription', back_populates='payments')
+
