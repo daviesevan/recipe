@@ -1,18 +1,33 @@
 import random
-from flask import Blueprint, jsonify, request
-from .utils import hashPassword, verifyPassword, validateEmail
-from app.models import User, db
+from flask import (Blueprint, 
+                   jsonify, 
+                   request)
+from .utils import (hashPassword, 
+                    verifyPassword, 
+                    validateEmail)
+from app.models import User, db, Subscription
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm.exc import UnmappedInstanceError
-from flask_jwt_extended import create_refresh_token, create_access_token, jwt_required, get_jwt_identity
+from flask_jwt_extended import (create_refresh_token, 
+                                create_access_token, 
+                                jwt_required, 
+                                get_jwt_identity)
 import resend
 from datetime import datetime, timedelta
 import os
+from app.emails.notifications import send_email
+from app.emails.reset_password_email import generate_password_reset_email
 
-auth_bp = Blueprint("auth", __name__, url_prefix="/auth")
+auth_bp = Blueprint("authentication", __name__, url_prefix="/auth")
 resend.api_key = os.environ["RESEND_API_KEY"]
 
-@auth_bp.route("/signup", methods=['POST'])
+
+def get_default_subscription():
+    # Get the 'free' subscription plan
+    return Subscription.query.filter_by(plan='free').first()
+
+
+@auth_bp.post("/signup")
 def signup():
     try:
         data = request.json
@@ -30,26 +45,39 @@ def signup():
             return jsonify(error="Email already exists, Try Logging in!"), 401
         
         hashed_password = hashPassword(password)
-        newUser = User(email=email, fullname=fullname, password=hashed_password)
+
+        # Get the default 'free' subscription
+        default_subscription = get_default_subscription()
+        if not default_subscription:
+            return jsonify(error="Default subscription plan not found"), 500
+        
+        newUser = User(
+            email=email, 
+            fullname=fullname, 
+            password=hashed_password,
+            subscription_id=default_subscription.id
+        )
         db.session.add(newUser)
         db.session.commit()
         
         return jsonify(message=f"{fullname} created successfully"), 201
-    
+
     except IntegrityError as e:
         db.session.rollback()
-        if 'email' in str(e.orig):
-            return jsonify(error='Email already exists'), 409
+        print(f"IntegrityError: {e.orig}")  # Log the original error message for debugging
+        return jsonify(error='Database integrity error'), 500
         
     except UnmappedInstanceError as e:
         db.session.rollback()
+        print(f"UnmappedInstanceError: {e}")  # Log the original error message for debugging
         return jsonify(error='Invalid input data'), 400
 
     except Exception as e:
         db.session.rollback()
+        print(f"Exception: {e}")  # Log the original error message for debugging
         return jsonify(error='An error occurred'), 500
 
-@auth_bp.route("/login", methods=['POST'])
+@auth_bp.post("/login")
 def login():
     try:
         data = request.json
@@ -62,8 +90,8 @@ def login():
         if not verifyPassword(password, user.password):
             return jsonify(error="Wrong password. Please try again!"), 401
         
-        access_token = create_access_token(identity=user.email)
-        refresh_token = create_refresh_token(identity=user.email)
+        access_token = create_access_token(identity=user.id)
+        refresh_token = create_refresh_token(identity=user.id)
 
         return jsonify(
             access_token=access_token,
@@ -83,14 +111,14 @@ def login():
         db.session.rollback()
         return jsonify(error=f'An error occurred {e}'), 500
 
-@auth_bp.route('/refresh', methods=['POST'])
+@auth_bp.post('/refresh')
 @jwt_required(refresh=True)
 def refresh_token():
     current_user = get_jwt_identity()
     access_token = create_access_token(identity=current_user)
     return jsonify(access_token=access_token), 200
 
-@auth_bp.route('/forgot-password', methods=['POST'])
+@auth_bp.post('/forgot-password')
 def forgot_password():
     try:
         data = request.json
@@ -111,68 +139,11 @@ def forgot_password():
         user.reset_token_expiration = datetime.now() + timedelta(minutes=15)  # Token valid for 15 minutes
         db.session.commit()
 
-        params = {
-            "from": "Davies Evan <onboarding@resend.dev>",
-            "to": user.email,
-            "subject": "Your password reset code",
-            "html": f"""
-            <!DOCTYPE html>
-            <html lang="en">
-            <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>Password Reset Code</title>
-            <style>
-                body {{
-                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-                background-color: #1f2937; /* Shadcn dark mode background */
-                color: #e5e7eb; /* Shadcn dark mode text color */
-                margin: 0;
-                padding: 20px;
-                }}
-                .container {{
-                max-width: 600px;
-                margin: 0 auto;
-                background-color: #111827; /* Shadcn dark mode card background */
-                padding: 40px;
-                border-radius: 8px;
-                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-                }}
-                .code {{
-                font-size: 48px;
-                font-weight: bold;
-                text-align: center;
-                margin: 20px 0;
-                padding: 20px;
-                background-color: #374151; /* Shadcn dark mode code background */
-                border-radius: 8px;
-                }}
-                .footer {{
-                text-align: center;
-                font-size: 14px;
-                color: #6b7280; /* Shadcn dark mode muted text color */
-                }}
-            </style>
-            </head>
-            <body>
-            <div class="container">
-                <h1>Password Reset Code</h1>
-                <p>Hello, {user.fullname}</p>
-                <p>You have requested to reset your password. Please use the following 6-digit code to proceed:</p>
-                <div class="code">{ reset_code }</div>
-                <p>This code will expire in 15 minutes.</p>
-                <div class="footer">
-                If you didn't request a password reset, please ignore this email.
-                </div>
-            </div>
-            </body>
-            </html>
-            """
-        }
-        email = resend.Emails.send(params)
-        print(email)
+        html_content = generate_password_reset_email(user, reset_code)
+        response = send_email(user.email, "Your password reset code", html_content)
+        return response
         
-        return jsonify(message="Password reset code sent to your email"), 200
+        # return jsonify(message="Password reset code sent to your email"), 200
 
     except IntegrityError as e:
         db.session.rollback()
@@ -187,7 +158,7 @@ def forgot_password():
         return jsonify(error=f'An error occurred {e}'), 500
 
 
-@auth_bp.route('/reset-password', methods=['POST'])
+@auth_bp.post('/reset-password')
 def reset_password():
     try:
         data = request.json
@@ -211,8 +182,8 @@ def reset_password():
         hashed_password = hashPassword(new_password)
         user.password = hashed_password
         user.isEmailVerified = True
-        user.reset_token = None  # Clear the reset token after successful reset
-        user.reset_token_expiration = None  # Clear the reset token expiration
+        user.reset_token = None  
+        user.reset_token_expiration = None
         db.session.commit()
         
         return jsonify(message="Password has been reset successfully"), 200

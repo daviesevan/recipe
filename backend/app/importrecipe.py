@@ -2,7 +2,7 @@ import sqlite3
 from app.models import db, Recipe
 
 def transfer_data():
-    conn = sqlite3.connect('recipes.db')
+    conn = sqlite3.connect('C:/Users/Davies Evan/Desktop/recipe/backend/app/recipes.db')
     print("Connected<<<<<<<")
     cursor = conn.cursor()
 

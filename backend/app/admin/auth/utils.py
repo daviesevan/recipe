@@ -28,4 +28,3 @@ def verifyPassword(password, hashedPassword):
 # Generate a random 6-digit code
 def generate_reset_code():
     return ''.join(random.choices(string.digits, k=6))
-
