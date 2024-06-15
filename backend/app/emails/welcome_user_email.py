@@ -1,41 +1,78 @@
-def generate_welcome_email(user):
+def generate_welcome_email(fullname):
     html_content = f"""
     <!DOCTYPE html>
     <html lang="en">
     <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Welcome</title>
+    <title>Welcome to Recipes</title>
     <style>
         body {{
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-        background-color: #1f2937; 
-        color: #e5e7eb; 
-        margin: 0;
-        padding: 20px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            background-color: #FFFFFF;
+            color: #000000;
+            margin: 0;
+            padding: 20px;
         }}
         .container {{
-        max-width: 600px;
-        margin: 0 auto;
-        background-color: #111827; 
-        padding: 40px;
-        border-radius: 8px;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #FFFFFF;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }}
+        h1 {{
+            color: #FF6347;
+        }}
+        .hero-image {{
+            width: 100%;
+            height: auto;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }}
+        .feature-list {{
+            background-color: #F8F8F8;
+            padding: 20px;
+            border-radius: 8px;
         }}
         .footer {{
-        text-align: center;
-        font-size: 14px;
-        color: #6b7280; 
+            text-align: center;
+            font-size: 14px;
+            color: #333333;
+            margin-top: 30px;
         }}
     </style>
     </head>
     <body>
     <div class="container">
-        <h1>Welcome to Our Company</h1>
-        <p>Hello, {user.fullname}</p>
-        <p>Welcome to the team! We are excited to have you on board. Feel free to reach out if you have any questions.</p>
+        <h1>Welcome to Recipes!</h1>
+        <img src="https://opendoodles.s3-us-west-1.amazonaws.com/loving.png" alt="Welcome to Recipes!" class="hero-image">
+        <p>Hello, {fullname}!</p>
+        <p>We're thrilled to have you join our team of culinary enthusiasts. As an admin at Recipes!, you're about to embark on a delicious journey!</p>
+        
+        <h2>🍽️ What You Can Do:</h2>
+        <div class="feature-list">
+            <ul>
+                <li>📝 Create and edit mouth-watering recipes</li>
+                <li>📸 Upload high-quality food images</li>
+                <li>👤 Manage user accounts and reviews</li>
+                <li>📊 Access analytics on popular recipes</li>
+                <li>🏷️ Organize recipes with tags and categories</li>
+                <li>📢 Publish special announcements and featured recipes</li>
+            </ul>
+        </div>
+
+        <p>To help you get started, we've prepared a special treat just for you:</p>
+        <img src="https://opendoodles.s3-us-west-1.amazonaws.com/clumsy.png" alt="Your Admin Toolkit" style="width: 100%; height: auto; border-radius: 8px; margin: 20px 0;">
+
+        <p>This is your admin toolkit, packed with all the resources you need to start cooking up a storm in our digital kitchen!</p>
+
+        <p>If you have any questions or need assistance, our support team is always ready to help. Just drop us a line at <strong>support@recipes.com</strong>.</p>
+
         <div class="footer">
-        If you have any questions, please don't hesitate to contact us.
+            <p>Happy cooking and welcome aboard!</p>
+            <p>The Recipes Team</p>
         </div>
     </div>
     </body>

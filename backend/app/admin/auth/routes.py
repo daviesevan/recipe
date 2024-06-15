@@ -63,7 +63,8 @@ def signup():
         # Send welcome email to the newly created admin
         html_content = generate_welcome_email(fullname)
         response = send_email(email, "Welcome to our platform", html_content)
-        return response
+                
+        return jsonify(message=f"{fullname} created successfully and welcome email sent"), 201
     
     except IntegrityError as e:
         db.session.rollback()
@@ -76,7 +77,9 @@ def signup():
 
     except Exception as e:
         db.session.rollback()
-        return jsonify(error='An error occurred'), 500
+        return jsonify(error=f'An error occurred {e}'), 500
+
+    return jsonify(error='An error occurred'), 500
 
 @admin_bp.post('/login')
 def login():
