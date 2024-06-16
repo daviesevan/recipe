@@ -3,6 +3,7 @@ import time
 import re
 import bcrypt
 import string
+from app.models import Admin
 
 def unique_id():
     return int(time.time() * 100000) + random.randint(0, 999999)
@@ -28,3 +29,6 @@ def verifyPassword(password, hashedPassword):
 # Generate a random 6-digit code
 def generate_reset_code():
     return ''.join(random.choices(string.digits, k=6))
+
+def get_admin_count():
+    return Admin.query.filter(Admin.isAdmin == True).count()

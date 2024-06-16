@@ -11,12 +11,14 @@ from sqlalchemy.orm.exc import UnmappedInstanceError
 from flask_jwt_extended import (create_refresh_token, 
                                 create_access_token, 
                                 jwt_required, 
-                                get_jwt_identity)
+                                get_jwt_identity,
+                                verify_jwt_in_request)
 import resend
 from datetime import datetime, timedelta
 import os
 from app.emails.notifications import send_email
 from app.emails.reset_password_email import generate_password_reset_email
+from functools import wraps
 
 auth_bp = Blueprint("authentication", __name__, url_prefix="/auth")
 resend.api_key = os.environ["RESEND_API_KEY"]
@@ -25,6 +27,28 @@ resend.api_key = os.environ["RESEND_API_KEY"]
 def get_default_subscription():
     # Get the 'free' subscription plan
     return Subscription.query.filter_by(plan='free').first()
+
+def user_required(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        try:
+            # Verify JWT token in the request headers
+            verify_jwt_in_request()
+
+            # Get the current user's identity from the JWT token
+            current_user_id = get_jwt_identity()
+
+            # Fetch the admin user from the database based on the current user's identity
+            user = User.query.get(current_user_id)
+
+            if not user:
+                return jsonify(error='Unauthorized access'), 401
+
+            # If user and authenticated, proceed with the wrapped function
+            return func(*args, **kwargs)
+
+        except Exception as e:
+            return jsonify(error=f'Unauthorized access {e}'), 401
 
 
 @auth_bp.post("/signup")
@@ -64,17 +88,17 @@ def signup():
 
     except IntegrityError as e:
         db.session.rollback()
-        print(f"IntegrityError: {e.orig}")  # Log the original error message for debugging
+        print(f"IntegrityError: {e.orig}") 
         return jsonify(error='Database integrity error'), 500
         
     except UnmappedInstanceError as e:
         db.session.rollback()
-        print(f"UnmappedInstanceError: {e}")  # Log the original error message for debugging
+        print(f"UnmappedInstanceError: {e}") 
         return jsonify(error='Invalid input data'), 400
 
     except Exception as e:
         db.session.rollback()
-        print(f"Exception: {e}")  # Log the original error message for debugging
+        print(f"Exception: {e}") 
         return jsonify(error='An error occurred'), 500
 
 @auth_bp.post("/login")

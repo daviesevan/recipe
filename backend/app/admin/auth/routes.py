@@ -8,16 +8,21 @@ from app.emails.welcome_user_email import generate_welcome_email
 from flask_jwt_extended import (create_access_token, 
                                 create_refresh_token, 
                                 get_jwt_identity, 
-                                verify_jwt_in_request)
+                                verify_jwt_in_request,
+                                jwt_required)
 from functools import wraps
-
+from app.admin.auth.utils import get_admin_count
+from functools import cache
 
 admin_bp = Blueprint('administration', __name__, url_prefix='/admin')
+
 
 def admin_required(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
         try:
+            # Get the admin count 
+            adminCount = get_admin_count()
             # Verify JWT token in the request headers
             verify_jwt_in_request()
 
@@ -27,7 +32,7 @@ def admin_required(func):
             # Fetch the admin user from the database based on the current user's identity
             admin = Admin.query.get(current_user_id)
 
-            if not admin:  # Adjust based on your Admin model
+            if not admin or not admin.isAdmin:
                 return jsonify(error='Unauthorized access'), 401
 
             # If admin and authenticated, proceed with the wrapped function
@@ -39,6 +44,8 @@ def admin_required(func):
     return wrapper
 
 @admin_bp.post('/signup')
+@admin_required
+@cache
 def signup():
     try:
         data = request.json
@@ -55,16 +62,25 @@ def signup():
         if Admin.query.filter_by(email=email).first():
             return jsonify(error="Email already exists, Try Logging in!"), 401
         
-        hashed_password = hashPassword(password)
-        newAdmin = Admin(email=email, fullname=fullname, password=hashed_password)
-        db.session.add(newAdmin)
-        db.session.commit()
-        
-        # Send welcome email to the newly created admin
-        html_content = generate_welcome_email(fullname)
-        response = send_email(email, "Welcome to our platform", html_content)
-                
-        return jsonify(message=f"{fullname} created successfully and welcome email sent"), 201
+        adminCount = get_admin_count()
+        if adminCount < 1:
+            hashed_password = hashPassword(password)
+            newAdmin = Admin(email=email, fullname=fullname, password=hashed_password, isAdmin=True)
+            db.session.add(newAdmin)
+            db.session.commit()
+        else:
+            hashed_password = hashPassword(password)
+            newAdmin = Admin(email=email, fullname=fullname, password=hashed_password)
+            db.session.add(newAdmin)
+            db.session.commit()
+        try:
+            # Send welcome email to the newly created admin
+            html_content = generate_welcome_email(fullname)
+            response = send_email(email, "Welcome to our platform", html_content)
+                    
+            return jsonify(message=f"{fullname} created successfully and welcome email sent"), 201
+        except Exception:
+            return jsonify(message="Connection timeout")
     
     except IntegrityError as e:
         db.session.rollback()
@@ -82,6 +98,7 @@ def signup():
     return jsonify(error='An error occurred'), 500
 
 @admin_bp.post('/login')
+@cache
 def login():
     try:
         data = request.json
@@ -104,4 +121,10 @@ def login():
     except Exception as e:
         return jsonify(error='An error occurred'), 500
 
-
+@admin_bp.post('/refresh')
+@jwt_required(refresh=True)
+@cache
+def refresh_token():
+    current_user = get_jwt_identity()
+    access_token = create_access_token(identity=current_user)
+    return jsonify(access_token=access_token), 200

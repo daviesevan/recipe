@@ -9,6 +9,8 @@ import hashlib
 import json
 import os
 from dotenv import load_dotenv, find_dotenv
+from app.emails.notifications import send_email
+from app.emails.payment_confirmation_email import generate_payment_confirmation_email
 
 load_dotenv(find_dotenv())
 
@@ -96,7 +98,7 @@ def verify_payment():
         if response_data['data']['status'] == 'success':
             # Payment was successful, update payment record
             user_identity = get_jwt_identity()
-            user = User.query.filter_by(email=user_identity).first()
+            user = User.query.filter_by(id=user_identity).first()
             payment = Payment.query.filter_by(user_id=user.id).order_by(Payment.payment_date.desc()).first()
             payment.payment_status = "completed"
             db.session.commit()
@@ -130,6 +132,11 @@ def webhook():
             user.subscription_deadline = datetime.now() + timedelta(days=subscription.duration_days)
 
             db.session.commit()
+
+            # Send welcome email to the newly created admin
+            html_content = generate_payment_confirmation_email(fullname=user.fullname, price=payment.price, reference=reference, plan=subscription.plan)
+            response = send_email(user.email, "Payment Confirmation", html_content)
+
             return jsonify(status='success', message='Payment verified and user subscription updated'), 200
 
     return jsonify(status='failure', message='Invalid event or payment not found'), 400
