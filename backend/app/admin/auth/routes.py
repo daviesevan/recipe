@@ -10,9 +10,8 @@ from flask_jwt_extended import (create_access_token,
                                 get_jwt_identity, 
                                 verify_jwt_in_request,
                                 jwt_required)
-from functools import wraps
+from functools import wraps, cache
 from app.admin.auth.utils import get_admin_count
-from functools import cache
 
 admin_bp = Blueprint('administration', __name__, url_prefix='/admin')
 

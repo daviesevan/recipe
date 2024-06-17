@@ -4,7 +4,7 @@ import { useState } from "react";
 import api from "@/api";
 import toast, { Toaster } from "react-hot-toast";
 
-export default function AuthForm({ route, method }) {
+export default function AuthForm({ route, method, role = "users" }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullname, setFullname] = useState("");
@@ -26,13 +26,13 @@ export default function AuthForm({ route, method }) {
       if (method === "login") {
         localStorage.setItem("access_token", res.data.access_token);
         localStorage.setItem("refresh_token", res.data.refresh_token);
-        navigate("/recipes");
+        navigate(role === "admin" ? "/admin/dashboard" : "/recipes");
       } else {
         if (res.data.error) {
           toast.error(`${res.data.error}`);
         } else {
           toast.success("Signup successful! Please log in.");
-          navigate("/login");
+          navigate(role === "admin" ? "/admin/login" : "/login");
         }
       }
     } catch (error) {
@@ -50,15 +50,24 @@ export default function AuthForm({ route, method }) {
   return (
     <>
       <Toaster position="top-right" reverseOrder={false} />
-      <div className="flex min-h-full flex-1 flex-col justify-center px-6 py-12 lg:px-8">
+      <div
+        className={`flex min-h-full flex-1 flex-col justify-center px-6 py-12 lg:px-8 ${
+          role === "admin" ? "bg-gray-800 text-white" : "bg-white text-gray-900"
+        }`}
+      >
         <div className="sm:mx-auto sm:w-full sm:max-w-sm">
-          {/* <img
-            className="mx-auto h-10 w-auto"
-            src="https://tailwindui.com/img/logos/mark.svg?color=indigo&shade=600"
-            alt="Your Company"
-          /> */}
-          <h2 className="mt-10 text-center text-2xl font-bold leading-9 tracking-tight text-gray-900">
-            {method === "signup" ? "Create an account" : "Sign in to your account"}
+          <h2
+            className={`mt-10 text-center text-2xl font-bold leading-9 tracking-tight ${
+              role === "admin" ? "text-white" : "text-gray-900"
+            }`}
+          >
+            {method === "signup"
+              ? role === "admin"
+                ? "Create an admin account"
+                : "Create an account"
+              : role === "admin"
+              ? "Admin Sign in"
+              : "Sign in to your account"}
           </h2>
         </div>
 
@@ -68,7 +77,9 @@ export default function AuthForm({ route, method }) {
               <div>
                 <label
                   htmlFor="fullname"
-                  className="block text-sm font-medium leading-6 text-gray-900"
+                  className={`block text-sm font-medium leading-6 ${
+                    role === "admin" ? "text-white" : "text-gray-900"
+                  }`}
                 >
                   Full Name
                 </label>
@@ -78,10 +89,14 @@ export default function AuthForm({ route, method }) {
                     name="fullname"
                     type="text"
                     value={fullname}
-                    placeholder = "Enter your Fullname"
+                    placeholder="Enter your Fullname"
                     onChange={(e) => setFullname(e.target.value)}
                     required
-                    className="mt-2 block w-full placeholder-gray-400/70 rounded-lg border border-gray-200 bg-white px-5 py-2.5 text-gray-700 focus:border-blue-400 focus:outline-none focus:ring focus:ring-blue-300 focus:ring-opacity-40 dark:border-gray-600 dark:bg-gray-900 dark:text-gray-300 dark:focus:border-blue-300"
+                    className={`mt-2 block w-full placeholder-gray-400/70 rounded-lg border ${
+                      role === "admin"
+                        ? "border-gray-700 bg-gray-900 text-gray-300"
+                        : "border-gray-200 bg-white text-gray-700"
+                    } px-5 py-2.5 focus:border-blue-400 focus:outline-none focus:ring focus:ring-blue-300 focus:ring-opacity-40`}
                   />
                 </div>
               </div>
@@ -90,7 +105,9 @@ export default function AuthForm({ route, method }) {
             <div>
               <label
                 htmlFor="email"
-                className="block text-sm font-medium leading-6 text-gray-900"
+                className={`block text-sm font-medium leading-6 ${
+                  role === "admin" ? "text-white" : "text-gray-900"
+                }`}
               >
                 Email address
               </label>
@@ -100,11 +117,15 @@ export default function AuthForm({ route, method }) {
                   name="email"
                   type="email"
                   autoComplete="email"
-                  placeholder = "Enter your email address."
+                  placeholder="Enter your email address."
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
-                  className="mt-2 block w-full placeholder-gray-400/70 rounded-lg border border-gray-200 bg-white px-5 py-2.5 text-gray-700 focus:border-blue-400 focus:outline-none focus:ring focus:ring-blue-300 focus:ring-opacity-40 dark:border-gray-600 dark:bg-gray-900 dark:text-gray-300 dark:focus:border-blue-300"
+                  className={`mt-2 block w-full placeholder-gray-400/70 rounded-lg border ${
+                    role === "admin"
+                      ? "border-gray-700 bg-gray-900 text-gray-300"
+                      : "border-gray-200 bg-white text-gray-700"
+                  } px-5 py-2.5 focus:border-blue-400 focus:outline-none focus:ring focus:ring-blue-300 focus:ring-opacity-40`}
                 />
               </div>
             </div>
@@ -113,7 +134,9 @@ export default function AuthForm({ route, method }) {
               <div className="flex items-center justify-between">
                 <label
                   htmlFor="password"
-                  className="block text-sm font-medium leading-6 text-gray-900"
+                  className={`block text-sm font-medium leading-6 ${
+                    role === "admin" ? "text-white" : "text-gray-900"
+                  }`}
                 >
                   Password
                 </label>
@@ -134,11 +157,15 @@ export default function AuthForm({ route, method }) {
                   name="password"
                   type="password"
                   autoComplete="current-password"
-                  placeholder = "********"
+                  placeholder="********"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  className="mt-2 block w-full placeholder-gray-400/70 rounded-lg border border-gray-200 bg-white px-5 py-2.5 text-gray-700 focus:border-blue-400 focus:outline-none focus:ring focus:ring-blue-300 focus:ring-opacity-40 dark:border-gray-600 dark:bg-gray-900 dark:text-gray-300 dark:focus:border-blue-300"
+                  className={`mt-2 block w-full placeholder-gray-400/70 rounded-lg border ${
+                    role === "admin"
+                      ? "border-gray-700 bg-gray-900 text-gray-300"
+                      : "border-gray-200 bg-white text-gray-700"
+                  } px-5 py-2.5 focus:border-blue-400 focus:outline-none focus:ring focus:ring-blue-300 focus:ring-opacity-40`}
                 />
               </div>
             </div>
@@ -146,20 +173,35 @@ export default function AuthForm({ route, method }) {
             <div>
               <Button
                 type="submit"
-                className="flex w-full justify-center rounded-md px-3 py-1.5 text-sm font-semibold leading-6 text-white shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+                className={`flex w-full justify-center rounded-md px-3 py-1.5 text-sm font-semibold leading-6 ${
+                  role === "admin"
+                    ? "text-gray-900 bg-white"
+                    : "text-white bg-indigo-600"
+                } shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2`}
               >
-                {loading ? "Loading..." : method === "signup" ? "Sign up" : "Sign in"}
+                {loading
+                  ? "Loading..."
+                  : method === "signup"
+                  ? role === "admin"
+                    ? "Admin Sign up"
+                    : "Sign up"
+                  : role === "admin"
+                  ? "Admin Sign in"
+                  : "Sign in"}
               </Button>
             </div>
           </form>
-          
 
-          <p className="mt-10 text-center text-sm text-gray-500">
+          <p
+            className={`mt-10 text-center text-sm ${
+              role === "admin" ? "text-gray-400" : "text-gray-500"
+            }`}
+          >
             {method === "signup" ? (
               <>
                 Already have an account?
                 <Link
-                  to="/login"
+                  to={role === "admin" ? "/admin/login" : "/login"}
                   className="text-blue-700 hover:text-blue-900"
                 >
                   {" "}
@@ -170,7 +212,7 @@ export default function AuthForm({ route, method }) {
               <>
                 Don't have an account?
                 <Link
-                  to="/signup"
+                  to={role === "admin" ? "/admin/signup" : "/signup"}
                   className="text-blue-700 hover:text-blue-900"
                 >
                   {" "}

@@ -6,6 +6,9 @@ import SignupPage from "./pages/SignupPage";
 import ProtectedRoutes from "./components/ProtectedRoutes";
 import Recipes from "./pages/Recipes";
 import PasswordResetPage from "./pages/PasswordResetPage";
+import Signuppage from "./pages/admin/Signup.page";
+import DashboardPage from "./pages/admin/Dashboard.page";
+import AdminLoginPage from "./pages/admin/Login.page";
 
 const Logout = () => {
   localStorage.clear();
@@ -23,6 +26,7 @@ const Router = () => {
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/admin/login" element={<AdminLoginPage />} />
         <Route path="/signup" element={<Signup />} />
         <Route path="/logout" element={<Logout />} />
         <Route path="/reset-password" element={<PasswordResetPage />} />
@@ -31,6 +35,22 @@ const Router = () => {
           element={
             <ProtectedRoutes>
               <Recipes />
+            </ProtectedRoutes>
+          }
+        />
+        <Route
+          path="/admin/signup"
+          element={
+            <ProtectedRoutes>
+              <Signuppage />
+            </ProtectedRoutes>
+          }
+        />
+        <Route
+          path="/admin/dashboard"
+          element={
+            <ProtectedRoutes>
+              <DashboardPage />
             </ProtectedRoutes>
           }
         />
