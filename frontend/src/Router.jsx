@@ -9,6 +9,8 @@ import PasswordResetPage from "./pages/PasswordResetPage";
 import Signuppage from "./pages/admin/Signup.page";
 import DashboardPage from "./pages/admin/Dashboard.page";
 import AdminLoginPage from "./pages/admin/Login.page";
+import PaymentConfirmation from "./pages/PaymentConfirmation";
+import PaymentPage from "./pages/PaymentPage";
 
 const Logout = () => {
   localStorage.clear();
@@ -29,6 +31,7 @@ const Router = () => {
         <Route path="/admin/login" element={<AdminLoginPage />} />
         <Route path="/signup" element={<Signup />} />
         <Route path="/logout" element={<Logout />} />
+        <Route path="/callback" element={<PaymentConfirmation />} />
         <Route path="/reset-password" element={<PasswordResetPage />} />
         <Route
           path="/recipes"
@@ -51,6 +54,14 @@ const Router = () => {
           element={
             <ProtectedRoutes>
               <DashboardPage />
+            </ProtectedRoutes>
+          }
+        />
+        <Route
+          path="/subscriptions"
+          element={
+            <ProtectedRoutes>
+              <PaymentPage />
             </ProtectedRoutes>
           }
         />

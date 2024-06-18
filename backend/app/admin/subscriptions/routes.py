@@ -24,3 +24,21 @@ def create_subscription():
         db.session.rollback()
         print(f"Exception: {e}")
         return jsonify(error="An error occurred while creating dummy subscriptions"), 500
+
+@subscription_bp.get('/')
+def get_subscriptions():
+    try:
+        subscriptions = Subscription.query.all()
+        subscriptions_data = [
+            {
+                "id": sub.id,
+                "plan": sub.plan,
+                "search_limit": sub.search_limit,
+                "price": sub.price,
+                "duration_days": sub.duration_days
+            } for sub in subscriptions
+        ]
+        return jsonify(subscriptions=subscriptions_data), 200
+    except Exception as e:
+        print(f"Exception: {e}")
+        return jsonify(error="An error occurred while fetching subscriptions"), 500
