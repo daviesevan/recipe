@@ -40,7 +40,7 @@ def initialize_payment():
             amount = int(subscription.price * 12 * 0.9 * 100)  # Annual price with 10% discount
             stored_amount = subscription.price * 12 * 0.9  # Annual price with discount
         else:
-            amount = int(subscription.price * 100)  # Monthly price in kobo
+            amount = int(subscription.price * 100)  # Monthly price
             stored_amount = subscription.price  # Monthly price
 
         # Initialize payment with Paystack
@@ -51,7 +51,7 @@ def initialize_payment():
         }
         payload = {
             "email": user.email,
-            "name":user.fullname,
+            "customer_name":user.fullname,
             "amount": amount,
             "reference": unique_id(), 
             "callback_url": "http://localhost:3000/callback"
