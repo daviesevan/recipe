@@ -54,7 +54,7 @@ def initialize_payment():
             "customer_name":user.fullname,
             "amount": amount,
             "reference": unique_id(), 
-            "callback_url": "http://localhost:3000/callback"
+            "callback_url": "https://s3gmmbpw-3000.uks1.devtunnels.ms/callback"
         }
 
         response = requests.post("https://api.paystack.co/transaction/initialize", json=payload, headers=headers)
@@ -84,7 +84,6 @@ def initialize_payment():
         db.session.rollback()
         return jsonify(error=f"An error occurred: {str(e)}"), 500
 
-
 @paymentBp.post('/verify')
 @jwt_required()
 def verify_payment():
@@ -105,6 +104,7 @@ def verify_payment():
             return jsonify(error="Payment verification failed"), response.status_code
 
         response_data = response.json()
+        print(response_data)
         if response_data['data']['status'] == 'success':
             # Payment was successful, update payment record
             user_identity = get_jwt_identity()
@@ -113,16 +113,30 @@ def verify_payment():
             payment.payment_status = "completed"
             db.session.commit()
 
+            print(f'{user.fullname}, {user.email}')
+
+            # Include payment details in the response
+            payment_details = {
+                "reference": response_data['data']['reference'],
+                "status": response_data['data']['status'],
+                "paid_at": response_data['data']['paid_at'],
+                "channel": response_data['data']['channel'],
+                "amount": response_data['data']['amount'],
+                "currency": response_data['data']['currency'],
+                "card_type": response_data['data']['authorization']['card_type'],
+                "last4": response_data['data']['authorization']['last4'],
+                "fees": response_data['data']['fees']
+            }
+
             return jsonify(message="Payment verified successfully", user={
                 "fullname": user.fullname,
                 "email": user.email
-            }), 200
+            }, paymentDetails=payment_details), 200
         else:
             return jsonify(error="Payment was not successful"), 400
 
     except Exception as e:
         return jsonify(error=f"An error occurred: {str(e)}"), 500
-
 
 
 @paymentBp.post('/webhook')

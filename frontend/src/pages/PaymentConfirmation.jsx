@@ -19,15 +19,18 @@ const PaymentConfirmation = () => {
     const queryParams = getQueryParams(location.search);
     const reference = queryParams.get("reference");
 
+    console.log("Extracted reference:", reference); // Debugging line
+
     if (!reference) {
       console.error("Reference is required");
+      setLoading(false); // Stop loading if reference is missing
       return;
     }
 
     const verifyPayment = async () => {
       try {
         const response = await api.post("/payment/verify", { reference });
-        setPaymentDetails(response.data);
+        setPaymentDetails(response.data.paymentDetails);
       } catch (error) {
         if (retryCount < maxRetries) {
           setTimeout(() => setRetryCount(retryCount + 1), retryInterval);
@@ -50,6 +53,14 @@ const PaymentConfirmation = () => {
     return <div>Payment verification failed. Please try again.</div>;
   }
 
+  // Log payment details for debugging
+  console.log(paymentDetails);
+
+  const { paid_at, channel, amount, currency, status, card_type, last4, fees, reference } = paymentDetails;
+  const formattedPaidAt = paid_at ? new Date(paid_at).toLocaleDateString() : "N/A";
+  const formattedAmount = amount ? (amount / 100).toFixed(2) : "N/A";
+  const formattedFees = fees ? (fees / 100).toFixed(2) : "N/A";
+
   return (
     <section className="bg-white py-8 antialiased dark:bg-gray-900 md:py-16">
       <div className="mx-auto max-w-2xl px-4 2xl:px-0">
@@ -70,7 +81,7 @@ const PaymentConfirmation = () => {
               Date
             </dt>
             <dd className="font-medium text-gray-900 dark:text-white sm:text-end">
-              {new Date().toLocaleDateString()}
+              {formattedPaidAt}
             </dd>
           </dl>
           <dl className="sm:flex items-center justify-between gap-4">
@@ -78,33 +89,43 @@ const PaymentConfirmation = () => {
               Payment Method
             </dt>
             <dd className="font-medium text-gray-900 dark:text-white sm:text-end">
-              Paystack
+              {channel}
             </dd>
           </dl>
           <dl className="sm:flex items-center justify-between gap-4">
             <dt className="font-normal mb-1 sm:mb-0 text-gray-500 dark:text-gray-400">
-              Name
+              Amount Paid
             </dt>
             <dd className="font-medium text-gray-900 dark:text-white sm:text-end">
-              {paymentDetails.user.fullname}
+              {formattedAmount} {currency}
             </dd>
           </dl>
           <dl className="sm:flex items-center justify-between gap-4">
             <dt className="font-normal mb-1 sm:mb-0 text-gray-500 dark:text-gray-400">
-              Email
+              Status
             </dt>
             <dd className="font-medium text-gray-900 dark:text-white sm:text-end">
-              {paymentDetails.user.email}
+              {status}
+            </dd>
+          </dl>
+          <dl className="sm:flex items-center justify-between gap-4">
+            <dt className="font-normal mb-1 sm:mb-0 text-gray-500 dark:text-gray-400">
+              Card Type
+            </dt>
+            <dd className="font-medium text-gray-900 dark:text-white sm:text-end">
+              {card_type} ending in {last4}
+            </dd>
+          </dl>
+          <dl className="sm:flex items-center justify-between gap-4">
+            <dt className="font-normal mb-1 sm:mb-0 text-gray-500 dark:text-gray-400">
+              Fees
+            </dt>
+            <dd className="font-medium text-gray-900 dark:text-white sm:text-end">
+              {formattedFees} {currency}
             </dd>
           </dl>
         </div>
         <div className="flex items-center space-x-4">
-          <Link
-            to="/"
-            className="text-white bg-primary-700 hover:bg-primary-800 focus:ring-4 focus:ring-primary-300 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-primary-600 dark:hover:bg-primary-700 focus:outline-none dark:focus:ring-primary-800"
-          >
-            Track your order
-          </Link>
           <Link
             to="/recipes"
             className="py-2.5 px-5 text-sm font-medium text-gray-900 focus:outline-none bg-white rounded-lg border border-gray-200 hover:bg-gray-100 hover:text-primary-700 focus:z-10 focus:ring-4 focus:ring-gray-100 dark:focus:ring-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600 dark:hover:text-white dark:hover:bg-gray-700"

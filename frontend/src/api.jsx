@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const baseURL = import.meta.env.VITE_BASE_URL;
+const baseURL = "https://s3gmmbpw-5000.uks1.devtunnels.ms";
 
 const api = axios.create({
   baseURL,
