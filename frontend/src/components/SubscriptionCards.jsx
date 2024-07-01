@@ -13,12 +13,15 @@ import {
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { CheckIcon } from "lucide-react";
+import toast, {Toaster} from 'react-hot-toast'
+import Spinner from "./Spinner";
 
 const SubscriptionCards = () => {
   const [subscriptions, setSubscriptions] = useState([]);
   const [loading, setLoading] = useState(false);
   const [annual, setAnnual] = useState(false);
   const [loadingIds, setLoadingIds] = useState({});
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const fetchSubscriptions = async () => {
@@ -27,7 +30,7 @@ const SubscriptionCards = () => {
         const response = await api.get("/admin/subscription/");
         setSubscriptions(response.data.subscriptions);
       } catch (error) {
-        console.error("Error fetching subscriptions:", error);
+        toast.error("Error fetching subscriptions:", error);
       } finally {
         setLoading(false);
       }
@@ -35,6 +38,13 @@ const SubscriptionCards = () => {
 
     fetchSubscriptions();
   }, []);
+
+  useEffect(() => {
+    if (error) {
+      toast.error(error);
+      setError(null);
+    }
+  }, [error]);
 
   const initializePayment = async (subscriptionId, isAnnual) => {
     setLoadingIds((prevLoadingIds) => ({
@@ -46,9 +56,15 @@ const SubscriptionCards = () => {
         subscription_id: subscriptionId,
         is_annual: isAnnual,
       });
+      toast.success("Payment initialized")
       window.location.href = response.data.authorization_url;
     } catch (error) {
       console.error("Error initializing payment:", error);
+      if (error.response && error.response.status === 400) {
+        setError(error.response.data.error || "You already have an active subscription");
+      } else {
+        setError("An error occurred while initializing payment");
+      }
     } finally {
       setLoadingIds((prevLoadingIds) => ({
         ...prevLoadingIds,
@@ -57,8 +73,14 @@ const SubscriptionCards = () => {
     }
   };
 
+  if (loading) {
+    return <Spinner loading={loading} />
+  }
+
+
   return (
     <>
+    <Toaster position="top-right" reverseOrder={false} />
       {/* Pricing */}
       <div className="container py-24 lg:py-32">
         {/* Title */}

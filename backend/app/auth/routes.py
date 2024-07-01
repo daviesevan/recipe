@@ -26,7 +26,7 @@ resend.api_key = os.environ["RESEND_API_KEY"]
 
 def get_default_subscription():
     # Get the 'free' subscription plan
-    return Subscription.query.filter_by(plan='free').first()
+    return Subscription.query.filter_by(plan='Free').first()
 
 def user_required(func):
     @wraps(func)

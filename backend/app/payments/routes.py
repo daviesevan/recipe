@@ -22,7 +22,9 @@ def initialize_payment():
         is_annual = data.get('is_annual', False)
 
         if not subscription_id:
-            return jsonify(error="Subscription ID is required"), 400
+            return jsonify(
+                error = "Subscription id is required"
+            ), 400
 
         # Fetch the subscription details
         subscription = Subscription.query.get(subscription_id)
@@ -34,6 +36,15 @@ def initialize_payment():
         user = User.query.filter_by(id=user_identity).first()
         if not user:
             return jsonify(error="User not found"), 404
+
+        active_payment = Payment.query.filter(
+            Payment.user_id == user.id,
+            Payment.payment_deadline > datetime.now(),
+            (Payment.payment_status == "completed") | (Payment.payment_status == "success")
+        ).first()
+
+        if active_payment:
+            return jsonify(error="You already have an active subscription."), 400
 
         # Calculate the amount
         if is_annual:
@@ -83,6 +94,7 @@ def initialize_payment():
     except Exception as e:
         db.session.rollback()
         return jsonify(error=f"An error occurred: {str(e)}"), 500
+
 
 @paymentBp.post('/verify')
 @jwt_required()
