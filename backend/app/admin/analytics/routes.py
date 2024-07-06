@@ -2,7 +2,7 @@ from flask import Blueprint, jsonify
 from app.admin.auth.routes import admin_required
 from app.admin.analytics.utils import (
     get_total_user_count,
-    # get_user_count_by_subscription,
+    get_user_count_by_subscription,
     get_verified_user_count,
     get_active_user_count,
     get_admin_count,
@@ -15,7 +15,8 @@ from app.admin.analytics.utils import (
     get_top_paying_users,
     get_subscription_renewal_rate,
     get_average_searches_per_user,
-    get_recipe_count
+    get_recipe_count,
+    get_total_payments_by_subscription
 )
 from datetime import datetime, timedelta
 from functools import cache
@@ -49,12 +50,12 @@ def total_users():
     total_users = get_total_user_count()
     return jsonify(total_users=total_users)
 
-# @analyticsBp.get('/users-by-subscription')
-# @admin_required
-# @cache
-# def users_by_subscription():
-#     users_by_subscription = get_user_count_by_subscription()
-#     return jsonify(users_by_subscription=users_by_subscription)
+@analyticsBp.get('/users-by-subscription')
+@admin_required
+@cache
+def users_by_subscription():
+    user_count_by_subscription = get_user_count_by_subscription()
+    return jsonify(users_by_subscription=user_count_by_subscription)
 
 @analyticsBp.get('/verified-users')
 @admin_required

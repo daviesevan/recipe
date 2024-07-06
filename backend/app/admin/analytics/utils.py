@@ -2,6 +2,7 @@ from app.models import Payment, db, User, Subscription, Recipe, Admin
 from sqlalchemy import func
 from functools import cache
 from datetime import datetime, timedelta
+from sqlalchemy.orm import joinedload
 
 @cache
 def get_total_user_count():
@@ -24,9 +25,9 @@ def get_active_user_count(recent_days=30):
 def get_admin_count():
     return Admin.query.count()
 
-@cache
-def get_total_payments_by_subscription():
-    return db.session.query(Subscription.plan, func.sum(Payment.amount)).join(Payment).group_by(Subscription.plan).all()
+# @cache
+# def get_total_payments_by_subscription():
+#     return db.session.query(Subscription.plan, func.sum(Payment.amount)).join(Payment).group_by(Subscription.plan).all()
 
 @cache
 def get_average_payment_amount():
@@ -49,7 +50,10 @@ def get_monthly_active_users():
 def get_yearly_revenue(year=None):
     if year is None:
         year = datetime.now().year
-    return db.session.query(func.sum(Payment.amount)).filter(func.extract('year', Payment.payment_date) == year, Payment.payment_status == "success").scalar() or 0
+    return db.session.query(func.sum(Payment.amount)).filter(
+        func.extract('year', Payment.payment_date) == year,
+        Payment.payment_status.in_(["completed", "success"])
+    ).scalar() or 0
 
 @cache
 def get_top_paying_users(limit=10):
@@ -68,3 +72,40 @@ def get_average_searches_per_user():
 @cache
 def get_recipe_count():
     return Recipe.query.count()
+
+@cache
+def get_total_payments_by_subscription():
+    payments = db.session.query(Payment).options(joinedload(Payment.subscription)).all()
+    payments_by_subscription = [
+        {
+            "id": payment.id,
+            "user_id": payment.user_id,
+            "subscription_id": payment.subscription_id,
+            "amount": payment.amount,
+            "payment_date": payment.payment_date.isoformat(),
+            "payment_status": payment.payment_status,
+            "reference": payment.reference,
+            "payment_deadline": payment.payment_deadline.isoformat(),
+            "subscription": {
+                "id": payment.subscription.id,
+                "plan": payment.subscription.plan,
+                "search_limit": payment.subscription.search_limit,
+                "price": payment.subscription.price,
+                "duration_days": payment.subscription.duration_days
+            }
+        }
+        for payment in payments
+    ]
+    return payments_by_subscription
+
+def get_user_count_by_subscription():
+    subscriptions = db.session.query(Subscription).options(joinedload(Subscription.users)).all()
+    user_count_by_subscription = [
+        {
+            "subscription_id": subscription.id,
+            "subscription_plan": subscription.plan,
+            "user_count": len(subscription.users)
+        }
+        for subscription in subscriptions
+    ]
+    return user_count_by_subscription

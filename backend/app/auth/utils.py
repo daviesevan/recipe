@@ -3,6 +3,7 @@ import time
 import re
 import bcrypt
 import string
+from sqlalchemy.orm import joinedload
 
 def unique_id():
     return int(time.time() * 100000) + random.randint(0, 999999)

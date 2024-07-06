@@ -13,7 +13,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { CheckIcon } from "lucide-react";
-import toast, {Toaster} from 'react-hot-toast'
+import toast, { Toaster } from "react-hot-toast";
 import Spinner from "./Spinner";
 
 const SubscriptionCards = () => {
@@ -56,12 +56,14 @@ const SubscriptionCards = () => {
         subscription_id: subscriptionId,
         is_annual: isAnnual,
       });
-      toast.success("Payment initialized")
+      toast.success("Payment initialized");
       window.location.href = response.data.authorization_url;
     } catch (error) {
       console.error("Error initializing payment:", error);
       if (error.response && error.response.status === 400) {
-        setError(error.response.data.error || "You already have an active subscription");
+        setError(
+          error.response.data.error || "You already have an active subscription"
+        );
       } else {
         setError("An error occurred while initializing payment");
       }
@@ -74,13 +76,12 @@ const SubscriptionCards = () => {
   };
 
   if (loading) {
-    return <Spinner loading={loading} />
+    return <Spinner loading={loading} />;
   }
-
 
   return (
     <>
-    <Toaster position="top-right" reverseOrder={false} />
+      <Toaster position="top-right" reverseOrder={false} />
       {/* Pricing */}
       <div className="container py-24 lg:py-32">
         {/* Title */}
@@ -149,7 +150,9 @@ const SubscriptionCards = () => {
                   <ul className="mt-7 space-y-2.5 text-sm">
                     <li className="flex space-x-2">
                       <CheckIcon className="flex-shrink-0 mt-0.5 h-4 w-4" />
-                      <span className="text-muted-foreground">Number of searches: {subscription.search_limit}</span>
+                      <span className="text-muted-foreground">
+                        Number of searches: {subscription.search_limit}
+                      </span>
                     </li>
                     <li className="flex space-x-2">
                       <CheckIcon className="flex-shrink-0 mt-0.5 h-4 w-4" />
