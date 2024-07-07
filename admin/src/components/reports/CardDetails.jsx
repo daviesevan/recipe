@@ -3,7 +3,7 @@ import { api } from '../../Api';
 import Cards from "./Cards";
 import numberWithCommas from "../../lib/helpers/comma";
 
-const CardDetails = ({ endpoint, title, icon, dataKey }) => {
+const CardDetails = ({ endpoint, title, icon, dataKey, subtitle="This is an estimate" }) => {
   const [data, setData] = useState(null);
 
   useEffect(() => {
@@ -37,7 +37,7 @@ const CardDetails = ({ endpoint, title, icon, dataKey }) => {
         <>
           {renderData(data)}
           <p className="text-xs text-muted-foreground">
-            +20.1% from last month
+            {subtitle}
           </p>
         </>
       ) : (

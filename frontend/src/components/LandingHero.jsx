@@ -1,9 +1,6 @@
+import HeroImg from "../assets/food.jpg";
 
-
-import  HeroImg  from "../assets/food.jpg";
-
-
-export default function LandingHero() {
+const LandingHero = () => {
   return (
     <>
       {/* Hero */}
@@ -31,4 +28,6 @@ export default function LandingHero() {
       {/* End Hero */}
     </>
   );
-}
+};
+
+export default LandingHero;

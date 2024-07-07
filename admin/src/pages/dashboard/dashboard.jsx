@@ -43,6 +43,7 @@ import {
 import Navbar from "../../components/Navbar";
 import Cards from "../../components/reports/Cards";
 import CardDetails from "../../components/reports/CardDetails";
+import Transactions from "@/components/tables/Transactions";
 
 const Dashboard = () => {
   return (
@@ -55,25 +56,32 @@ const Dashboard = () => {
             title="Total Users"
             icon={<Users className="h-4 w-4 text-muted-foreground" />}
             dataKey="total_users"
+            subtitle="No. of users in our database"
           />
           <CardDetails
             endpoint="/admin/analytics/yearly-revenue"
             title="Total Revenue"
             icon={<DollarSign className="h-4 w-4 text-muted-foreground" />}
             dataKey="yearly_revenue"
+            subtitle="This years' revenue"
           />
           <CardDetails
             endpoint="/admin/analytics/users-by-subscription"
             title="Users by Subscription"
             icon={<PieChart className="h-4 w-4 text-muted-foreground" />}
             dataKey="users_by_subscription"
+            subtitle="No. of subscribed users"
           />
           <CardDetails
             endpoint="/admin/analytics/recipe-count"
             title="Recipe Count"
             icon={<Hash className="h-4 w-4 text-muted-foreground" />}
             dataKey="recipe_count"
+            subtitle="Total recipes in the database"
           />
+          <div className="grid gap-2">
+            <Transactions />
+          </div>
         </div>
       </main>
     </>

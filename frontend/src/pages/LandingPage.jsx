@@ -1,9 +1,8 @@
-import { LandingHero} from '@/components/LandingHero'
 import React from 'react'
 
 const LandingPage = () => {
   return (
-    <LandingHero />
+    <div>Hello</div>
   )
 }
 
