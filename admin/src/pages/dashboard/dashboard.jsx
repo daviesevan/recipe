@@ -44,6 +44,7 @@ import Navbar from "../../components/Navbar";
 import Cards from "../../components/reports/Cards";
 import CardDetails from "../../components/reports/CardDetails";
 import Transactions from "@/components/tables/Transactions";
+import Employees from "@/components/tables/Employees";
 
 const Dashboard = () => {
   return (
@@ -79,8 +80,13 @@ const Dashboard = () => {
             dataKey="recipe_count"
             subtitle="Total recipes in the database"
           />
-          <div className="grid gap-2">
+          </div>
+          <div className="grid gap-4 md:gap-8 lg:grid-cols-3">
+          <div className="lg:col-span-2">
             <Transactions />
+          </div>
+          <div className="lg:col-span-1">
+            <Employees />
           </div>
         </div>
       </main>
