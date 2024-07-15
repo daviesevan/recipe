@@ -10,7 +10,7 @@ from flask_jwt_extended import (create_access_token,
                                 get_jwt_identity, 
                                 verify_jwt_in_request,
                                 jwt_required)
-from functools import wraps, cache
+from functools import wraps
 from app.admin.auth.utils import get_admin_count
 
 admin_bp = Blueprint('administration', __name__, url_prefix='/admin')
@@ -20,8 +20,6 @@ def admin_required(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
         try:
-            # Get the admin count 
-            adminCount = get_admin_count()
             # Verify JWT token in the request headers
             verify_jwt_in_request()
 
@@ -44,7 +42,6 @@ def admin_required(func):
 
 @admin_bp.post('/signup')
 @admin_required
-@cache
 def signup():
     try:
         data = request.json
@@ -61,32 +58,36 @@ def signup():
         if Admin.query.filter_by(email=email).first():
             return jsonify(error="Email already exists, Try Logging in!"), 401
         
+        # Get the count of admin users
         adminCount = get_admin_count()
-        if adminCount < 1:
-            hashed_password = hashPassword(password)
-            newAdmin = Admin(email=email, fullname=fullname, password=hashed_password, isAdmin=True)
-            db.session.add(newAdmin)
-            db.session.commit()
-        else:
-            hashed_password = hashPassword(password)
-            newAdmin = Admin(email=email, fullname=fullname, password=hashed_password)
-            db.session.add(newAdmin)
-            db.session.commit()
+        print(f"Admin count: {adminCount}")  # Debug log
+
+        hashed_password = hashPassword(password)
+
+        # If there are no admins, set isAdmin to True, otherwise False
+        is_admin = adminCount < 1
+        print(f"is_admin: {is_admin}")  # Debug log
+        
+        newAdmin = Admin(email=email, fullname=fullname, password=hashed_password, isAdmin=is_admin)
+        
+        db.session.add(newAdmin)
+        db.session.commit()
+        
         try:
             # Send welcome email to the newly created admin
             html_content = generate_welcome_email(fullname)
             response = send_email(email, "Welcome to our platform", html_content)
                     
             return jsonify(message=f"{fullname} created successfully and welcome email sent"), 201
-        except Exception:
-            return jsonify(message="Connection timeout")
+        except Exception as e:
+            return jsonify(message=f"User created successfully but failed to send welcome email: {e}"), 201
     
     except IntegrityError as e:
         db.session.rollback()
         if 'email' in str(e.orig):
             return jsonify(error='Email already exists'), 409
         
-    except UnmappedInstanceError as e:
+    except UnmappedInstanceError:
         db.session.rollback()
         return jsonify(error='Invalid input data'), 400
 
@@ -96,8 +97,10 @@ def signup():
 
     return jsonify(error='An error occurred'), 500
 
+
+
 @admin_bp.post('/login')
-@cache
+# @cache
 def login():
     try:
         data = request.json
@@ -106,23 +109,25 @@ def login():
 
         if not email or not password:
             return jsonify(error="Email and password are required"), 400
-        
+
         admin = Admin.query.filter_by(email=email).first()
-        if not admin or not verifyPassword(password, admin.password):
+        if not admin:
+            return jsonify(error="Invalid credentials"), 401
+
+        if not verifyPassword(password, admin.password):
             return jsonify(error="Invalid credentials"), 401
 
         # Create JWT token for admin
         access_token = create_access_token(identity=admin.id)
         refresh_token = create_refresh_token(identity=admin.id)
 
-        return jsonify(access_token=access_token, refresh_token=refresh_token), 200
+        return jsonify(access_token=access_token, refresh_token=refresh_token, admin_name = admin.fullname), 200
     
-    except Exception as e:
+    except Exception:
         return jsonify(error='An error occurred'), 500
 
 @admin_bp.post('/refresh')
 @jwt_required(refresh=True)
-@cache
 def refresh_token():
     current_user = get_jwt_identity()
     access_token = create_access_token(identity=current_user)

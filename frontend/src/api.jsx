@@ -1,43 +1,76 @@
 import axios from "axios";
 
-const baseURL = import.meta.env.VITE_BASE_URL
+const baseURL = import.meta.env.VITE_BASE_URL;
 
 const api = axios.create({
   baseURL,
 });
+
 const refreshapi = axios.create({
   baseURL,
 });
 
+// Request interceptor for api calls
 api.interceptors.request.use(
   (config) => {
-    // Get access token from the localStorage
     const token = localStorage.getItem("access_token");
-    // Add the access token to the request headers if it exists
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
   },
-  (error) => {
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
 
 refreshapi.interceptors.request.use(
   (config) => {
-    // Get refresh token from the localStorage
     const token = localStorage.getItem("refresh_token");
-    // Add the refresh token to the request header
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
   },
-  (error) => {
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
 
-export default api;
-export { refreshapi };
+const signupUser = async (fullname, email, password) => {
+  try {
+    const response = await api.post("/auth/signup", {
+      fullname,
+      email,
+      password,
+    });
+    return response.data;
+  } catch (error) {
+    if (error.response) {
+      throw new Error(
+        error.response.data.error || "An error occurred during signup"
+      );
+    } else {
+      throw error;
+    }
+  }
+};
+
+const loginUser = async (email, password) => {
+  try {
+    const response = await api.post("/auth/login", {
+      email,
+      password,
+    });
+    const { access_token, refresh_token } = response.data;
+    localStorage.setItem("access_token", access_token);
+    localStorage.setItem("refresh_token", refresh_token);
+    return response.data;
+  } catch (error) {
+    if (error.response) {
+      throw new Error(
+        error.response.data.error || "An error occurred during login"
+      );
+    } else {
+      throw error;
+    }
+  }
+};
+
+export { api, refreshapi, signupUser, loginUser };

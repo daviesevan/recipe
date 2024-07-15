@@ -1,18 +1,23 @@
 import React, { useEffect, useState } from "react";
 import { api } from '../../Api';
 import Cards from "./Cards";
+import Loader from "../Loader";
 import numberWithCommas from "../../lib/helpers/comma";
 
 const CardDetails = ({ endpoint, title, icon, dataKey, subtitle="This is an estimate" }) => {
   const [data, setData] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
+      setIsLoading(true);
       try {
         const response = await api.get(`${endpoint}`);
         setData(response.data);
       } catch (error) {
         console.error('Error fetching data: ', error);
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -33,15 +38,19 @@ const CardDetails = ({ endpoint, title, icon, dataKey, subtitle="This is an esti
 
   return (
     <Cards title={title} icon={icon}>
-      {data !== null ? (
-        <>
-          {renderData(data)}
-          <p className="text-xs text-muted-foreground">
-            {subtitle}
-          </p>
-        </>
+      {isLoading ? (
+        <Loader loading={true} />
       ) : (
-        <div className="text-sm">Loading...</div>
+        data !== null ? (
+          <>
+            {renderData(data)}
+            <p className="text-xs text-muted-foreground">
+              {subtitle}
+            </p>
+          </>
+        ) : (
+          <div className="text-sm">Only admins can see this data.</div>
+        )
       )}
     </Cards>
   );

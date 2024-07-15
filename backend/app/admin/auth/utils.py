@@ -31,4 +31,4 @@ def generate_reset_code():
     return ''.join(random.choices(string.digits, k=6))
 
 def get_admin_count():
-    return Admin.query.filter(Admin.isAdmin == True).count()
+    return Admin.query.filter(Admin.isAdmin == True).count()  # noqa: E712

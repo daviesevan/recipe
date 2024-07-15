@@ -21,12 +21,13 @@ import { Button } from "@/components/ui/button";
 import Loader from "../Loader";
 import { ArrowUpRight } from "lucide-react";
 import numberWithCommas from "@/lib/helpers/comma";
+
 const Transactions = () => {
   const [transactions, setTransactions] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
-  const perPage = 10;
+  const perPage = 3;
 
   useEffect(() => {
     fetchTransactions();
@@ -58,7 +59,7 @@ const Transactions = () => {
           <div className="grid gap-2">
             <CardTitle>Transactions</CardTitle>
             <CardDescription>
-              Recent transactions made.
+              Showing latest three transactions made.
             </CardDescription>
           </div>
           <Button asChild size="sm" className="ml-auto gap-1">
@@ -69,60 +70,66 @@ const Transactions = () => {
           </Button>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Customer</TableHead>
-                <TableHead className="hidden xl:table-cell">Type</TableHead>
-                <TableHead className="hidden xl:table-cell">Status</TableHead>
-                <TableHead className="hidden xl:table-cell">Date</TableHead>
-                <TableHead className="text-right">Amount</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {transactions.map((transaction, index) => (
-                <TableRow key={index}>
-                  <TableCell>
-                    <div className="font-medium">{transaction.customer}</div>
-                    <div className="hidden text-sm text-muted-foreground md:inline">
-                      {transaction.email}
-                    </div>
-                  </TableCell>
-                  <TableCell className="hidden xl:table-cell">
-                    {transaction.type}
-                  </TableCell>
-                  <TableCell className="hidden xl:table-cell">
-                    <Badge className="text-xs" variant="outline">
-                      {transaction.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="hidden md:table-cell lg:hidden xl:table-cell">
-                    {transaction.date}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    Kes.{numberWithCommas(transaction.amount)}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-          <div className="flex justify-between items-center mt-4">
-            <Button
-              disabled={currentPage <= 1}
-              onClick={() => setCurrentPage(currentPage - 1)}
-            >
-              Previous
-            </Button>
-            <span>
-              Page {currentPage} of {totalPages}
-            </span>
-            <Button
-              disabled={currentPage >= totalPages}
-              onClick={() => setCurrentPage(currentPage + 1)}
-            >
-              Next
-            </Button>
-          </div>
+          {isLoading ? (
+            <Loader loading={true} />
+          ) : (
+            <>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Customer</TableHead>
+                    <TableHead className="hidden xl:table-cell">Type</TableHead>
+                    <TableHead className="hidden xl:table-cell">Status</TableHead>
+                    <TableHead className="hidden xl:table-cell">Date</TableHead>
+                    <TableHead className="text-right">Amount</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {transactions.map((transaction, index) => (
+                    <TableRow key={index}>
+                      <TableCell>
+                        <div className="font-medium">{transaction.customer}</div>
+                        <div className="hidden text-sm text-muted-foreground md:inline">
+                          {transaction.email}
+                        </div>
+                      </TableCell>
+                      <TableCell className="hidden xl:table-cell">
+                        {transaction.type}
+                      </TableCell>
+                      <TableCell className="hidden xl:table-cell">
+                        <Badge className="text-xs" variant="outline">
+                          {transaction.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="hidden md:table-cell lg:hidden xl:table-cell">
+                        {transaction.date}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        Kes.{numberWithCommas(transaction.amount)}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+              <div className="flex justify-between items-center mt-4">
+                <Button
+                  disabled={currentPage <= 1}
+                  onClick={() => setCurrentPage(currentPage - 1)}
+                >
+                  Previous
+                </Button>
+                <span>
+                  Page {currentPage} of {totalPages}
+                </span>
+                <Button
+                  disabled={currentPage >= totalPages}
+                  onClick={() => setCurrentPage(currentPage + 1)}
+                >
+                  Next
+                </Button>
+              </div>
+            </>
+          )}
         </CardContent>
       </Card>
     </>

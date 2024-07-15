@@ -1,21 +1,24 @@
 import React from "react";
 import BarLoader from "react-spinners/BarLoader";
 
-const override = {
-  display: "flex",
-  justifyContent: "center",
-  alignItems: "center",
-  height: "100vh",
-};
+const Loader = ({ loading, fullPage = false }) => {
+  const fullPageStyle = {
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    height: "100vh",
+  };
 
-const Loader = ({ loading }) => {
+  const componentStyle = {
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    height: "100%",
+  };
+
   return (
-    <div style={override}>
-      <BarLoader
-        color="#4338ca"
-        loading={loading}
-        size={150}
-      />
+    <div style={fullPage ? fullPageStyle : componentStyle}>
+      <BarLoader color="#000" loading={loading} />
     </div>
   );
 };

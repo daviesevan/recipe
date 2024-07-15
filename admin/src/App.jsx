@@ -9,6 +9,14 @@ const Logout = () => {
   localStorage.clear();
   return <Login />;
 };
+const Signin = () => {
+  localStorage.clear();
+  return <Login />;
+};
+// const Register = () => {
+//   // localStorage.clear();
+//   return <Signup />;
+// };
 
 function App() {
   return (
@@ -16,7 +24,7 @@ function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Dashboard />} />
-          <Route path="/admin/login" element={<Login />} />
+          <Route path="/admin/login" element={<Signin />} />
           <Route path="/admin/signup" element={<Signup />} />
           <Route path="/logout" element={<Logout />} />
           <Route
@@ -24,6 +32,14 @@ function App() {
             element={
               <ProtectedRoutes>
                 <Dashboard />
+              </ProtectedRoutes>
+            }
+          />
+          <Route
+            path="/admin/signup"
+            element={
+              <ProtectedRoutes>
+                <Signup />
               </ProtectedRoutes>
             }
           />

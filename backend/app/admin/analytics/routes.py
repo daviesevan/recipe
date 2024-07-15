@@ -143,7 +143,7 @@ def recipe_count():
 @admin_required
 def recent_transactions():
     page = request.args.get('page', 1, type=int)
-    per_page = request.args.get('per_page', 10, type=int)
+    per_page = request.args.get('per_page', 3, type=int)
 
     transactions = Payment.query.options(joinedload(Payment.user)).order_by(Payment.payment_date.desc()).paginate(page=page, per_page=per_page, error_out=False)
     

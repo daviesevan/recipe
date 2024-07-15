@@ -1,4 +1,4 @@
-from flask import Blueprint, jsonify
+from flask import Blueprint, jsonify, request
 from app.admin.auth.routes import admin_required
 from app.models import Admin, db
 
@@ -9,16 +9,25 @@ employee_bp = Blueprint('employees',
 @employee_bp.get('/')
 @admin_required
 def get_employees():
-    employees = Admin.query.all()
-    response = [{
-        'id': emp.id,
-        'email': emp.email,
-        'fullname': emp.fullname,
-        'isAdmin': emp.isAdmin,
-        'created_at': emp.created_at.strftime('%Y-%m-%d %H:%M:%S')
-    } for emp in employees]
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 3, type=int)
+    
+    employees_query = Admin.query.paginate(page=page, per_page=per_page)
+    
+    response = {
+        'employees': [{
+            'id': emp.id,
+            'email': emp.email,
+            'fullname': emp.fullname,
+            'isAdmin': emp.isAdmin,
+            'created_at': emp.created_at.strftime('%Y-%m-%d %H:%M:%S')
+        } for emp in employees_query.items],
+        'current_page': employees_query.page,
+        'total_pages': employees_query.pages
+    }
 
     return jsonify(response)
+
 
 @employee_bp.post('/<int:employee_id>/set_admin')
 @admin_required
