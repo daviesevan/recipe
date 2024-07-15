@@ -7,6 +7,8 @@ import Navbar from "./components/Navbar";
 import Dashboard from "./pages/Dashboard";
 import { AuthProvider } from "./context/AuthContext";
 import ProtectedRoutes from "./components/auth/ProtectedRoutes";
+import Settings from "./pages/settings/Settings";
+import SettingsLayout from "./layouts/SettingsLayout";
 
 const App = () => {
   return (
@@ -23,6 +25,14 @@ const App = () => {
               element={
                 <ProtectedRoutes>
                   <Dashboard />
+                </ProtectedRoutes>
+              }
+            />
+            <Route
+              path="/settings/*"
+              element={
+                <ProtectedRoutes>
+                  <SettingsLayout />
                 </ProtectedRoutes>
               }
             />
