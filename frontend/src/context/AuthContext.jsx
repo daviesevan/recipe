@@ -25,6 +25,20 @@ export const AuthProvider = ({ children }) => {
         } else {
           setLoading(false);
         }
+
+        // Check token expiration periodically
+        const interval = setInterval(() => {
+          const token = localStorage.getItem("access_token");
+          if (token) {
+            const decodedUser = jwtDecode(token);
+            const timeRemaining = decodedUser.exp * 1000 - Date.now();
+            if (timeRemaining < 5 * 60 * 1000) {
+              handleTokenRefresh();
+            }
+          }
+        }, 60 * 1000); // Check every minute
+
+        return () => clearInterval(interval);
       } catch (error) {
         console.error("Invalid token", error);
         logout();

@@ -1,9 +1,12 @@
-import React from 'react'
+import Hero from "@/components/dashboard/Hero";
+import React from "react";
 
 const Dashboard = () => {
   return (
-    <div>Dashboard</div>
-  )
-}
+    <>
+      <Hero />
+    </>
+  );
+};
 
-export default Dashboard
+export default Dashboard;
