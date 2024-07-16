@@ -1,74 +1,89 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
-
+import {
+  CreditCard,
+  UserRoundCog,
+  ChefHat,
+  HeartIcon,
+  Grape,
+  CookingPot,
+  SearchIcon,
+  Beef ,
+} from "lucide-react";
 const Sidebar = ({ children }) => {
   const location = useLocation();
 
   return (
-    <main className="flex min-h-[calc(100vh_-_theme(spacing.16))] bg-gray-50 flex-1 flex-col gap-4 bg-muted/40 p-4 md:gap-8 md:p-10">
+    <main className="flex min-h-[calc(100vh_-_theme(spacing.16))] flex-1 flex-col gap-4 bg-muted/40 p-4 md:gap-8 md:p-10">
       <div className="mx-auto grid w-full max-w-6xl gap-2">
-        <h1 className="text-3xl font-semibold">Settings</h1>
+        <h1 className="text-3xl font-semibold">My Kitchen</h1>
       </div>
       <div className="mx-auto grid w-full max-w-6xl items-start gap-6 md:grid-cols-[180px_1fr] lg:grid-cols-[250px_1fr]">
         <nav className="grid gap-4 text-sm text-muted-foreground">
           <Link
-            to="/settings"
+            to="/kitchen"
             className={
-              location.pathname === "/settings"
-                ? "font-semibold text-primary"
-                : ""
+              location.pathname === "/kitchen"
+                ? "font-semibold text-primary flex"
+                : "flex"
             }
           >
+            <UserRoundCog className="flex-shrink-0 w-4 h-auto mr-3" />
             General
           </Link>
           <Link
-            to="/settings/security"
+            to="/kitchen/subscriptions"
             className={
-              location.pathname === "/settings/security"
-                ? "font-semibold text-primary"
-                : ""
+              location.pathname === "/kitchen/subscriptions"
+                ? "font-semibold text-primary flex"
+                : "flex"
             }
           >
-            Security
+            <CreditCard className="flex-shrink-0 w-4 h-auto mr-3" />
+            Subscriptions
           </Link>
           <Link
-            to="/settings/integrations"
+            to="/kitchen/favourites"
             className={
-              location.pathname === "/settings/integrations"
-                ? "font-semibold text-primary"
-                : ""
+              location.pathname === "/kitchen/favourites"
+                ? "font-semibold text-primary flex"
+                : "flex"
             }
           >
-            Integrations
+            <HeartIcon className="flex-shrink-0 w-4 h-auto mr-3" />
+            Favourites
           </Link>
           <Link
-            to="/settings/support"
+            to="/kitchen/recipes"
             className={
-              location.pathname === "/settings/support"
-                ? "font-semibold text-primary"
-                : ""
+              location.pathname === "/kitchen/recipes"
+                ? "font-semibold text-primary flex"
+                : "flex"
             }
           >
-            Support
+            <ChefHat className="flex-shrink-0 w-4 h-auto mr-3" />
+            My Recipes
           </Link>
           <Link
-            to="/settings/organizations"
+            to="/kitchen/organizations"
             className={
-              location.pathname === "/settings/organizations"
-                ? "font-semibold text-primary"
-                : ""
-            }
-          >
+              location.pathname === "/kitchen/organizations"
+              ? "font-semibold text-primary flex"
+              : "flex"
+          }
+        >
+          <ChefHat className="flex-shrink-0 w-4 h-auto mr-3" />
             Organizations
           </Link>
           <Link
-            to="/settings/advanced"
+            to="/kitchen/advanced"
             className={
-              location.pathname === "/settings/advanced"
-                ? "font-semibold text-primary"
-                : ""
-            }
-          >
+              location.pathname === "/kitchen/advanced"
+              ? "font-semibold text-primary flex"
+              : "flex"
+          }
+        >
+          <ChefHat className="flex-shrink-0 w-4 h-auto mr-3" />
             Advanced
           </Link>
         </nav>

@@ -1,13 +1,14 @@
 import React, { createContext, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
-import { api } from "@/Api";
+import { api, refreshapi } from "@/Api";
 
 export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState(null);
+  const [userSettings, setUserSettings] = useState(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
@@ -24,9 +25,9 @@ export const AuthProvider = ({ children }) => {
           handleTokenRefresh();
         } else {
           setLoading(false);
+          fetchUserSettings();
         }
 
-        // Check token expiration periodically
         const interval = setInterval(() => {
           const token = localStorage.getItem("access_token");
           if (token) {
@@ -36,7 +37,7 @@ export const AuthProvider = ({ children }) => {
               handleTokenRefresh();
             }
           }
-        }, 60 * 1000); // Check every minute
+        }, 60 * 1000);
 
         return () => clearInterval(interval);
       } catch (error) {
@@ -51,7 +52,7 @@ export const AuthProvider = ({ children }) => {
 
   const handleTokenRefresh = async () => {
     try {
-      const { data } = await api.post("/auth/refresh");
+      const { data } = await refreshapi.post("/auth/refresh");
       localStorage.setItem("access_token", data.access_token);
       const decodedUser = jwtDecode(data.access_token);
       setIsAuthenticated(true);
@@ -69,6 +70,7 @@ export const AuthProvider = ({ children }) => {
     setIsAuthenticated(true);
     const decodedUser = jwtDecode(token);
     setUser(decodedUser);
+    fetchUserSettings();
     navigate("/dashboard");
   };
 
@@ -77,12 +79,30 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem("refresh_token");
     setIsAuthenticated(false);
     setUser(null);
+    setUserSettings(null);
     navigate("/login");
+  };
+
+  const fetchUserSettings = async () => {
+    try {
+      const response = await api.get("/user/settings/");
+      setUserSettings(response.data);
+    } catch (error) {
+      console.error("Failed to fetch user settings", error);
+    }
   };
 
   return (
     <AuthContext.Provider
-      value={{ isAuthenticated, user, login, logout, loading }}
+      value={{
+        isAuthenticated,
+        user,
+        userSettings,
+        login,
+        logout,
+        loading,
+        setUserSettings,
+      }}
     >
       {children}
     </AuthContext.Provider>

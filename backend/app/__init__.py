@@ -27,6 +27,7 @@ def create_app():
     from app.admin.settings.routes import admin_settings_bp
     from app.admin.analytics.routes import analyticsBp
     from app.admin.employees.routes import employee_bp
+    from app.settings.routes import user_settings_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(subscription_bp)
@@ -36,6 +37,7 @@ def create_app():
     app.register_blueprint(admin_settings_bp)
     app.register_blueprint(analyticsBp)
     app.register_blueprint(employee_bp)
+    app.register_blueprint(user_settings_bp)
 
     with app.app_context():
         db.create_all()

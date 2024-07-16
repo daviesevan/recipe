@@ -8,7 +8,7 @@ import Dashboard from "./pages/Dashboard";
 import { AuthProvider } from "./context/AuthContext";
 import ProtectedRoutes from "./components/auth/ProtectedRoutes";
 import Settings from "./pages/settings/Settings";
-import SettingsLayout from "./layouts/SettingsLayout";
+import KitchenLayout from "./layouts/KitchenLayout";
 
 const App = () => {
   return (
@@ -29,10 +29,10 @@ const App = () => {
               }
             />
             <Route
-              path="/settings/*"
+              path="/kitchen/*"
               element={
                 <ProtectedRoutes>
-                  <SettingsLayout />
+                  <KitchenLayout />
                 </ProtectedRoutes>
               }
             />

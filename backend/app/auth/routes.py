@@ -127,7 +127,7 @@ def login():
         db.session.rollback()
         return jsonify(error=f'An error occurred {e}'), 500
 
-    except UnmappedInstanceError as e:
+    except UnmappedInstanceError:
         db.session.rollback()
         return jsonify(error='Invalid input data'), 400
 
@@ -138,9 +138,13 @@ def login():
 @auth_bp.post('/refresh')
 @jwt_required(refresh=True)
 def refresh_token():
-    current_user = get_jwt_identity()
-    access_token = create_access_token(identity=current_user)
-    return jsonify(access_token=access_token), 200
+    try:
+        current_user = get_jwt_identity()
+        access_token = create_access_token(identity=current_user)
+        return jsonify(access_token=access_token), 200
+    except Exception as e:
+        return jsonify(error=f'Error refreshing token: {e}'), 401
+
 
 @auth_bp.post('/forgot-password')
 def forgot_password():
@@ -173,7 +177,7 @@ def forgot_password():
         db.session.rollback()
         return jsonify(error=f'An error occurred {e}'), 500
 
-    except UnmappedInstanceError as e:
+    except UnmappedInstanceError:
         db.session.rollback()
         return jsonify(error='Invalid input data'), 400
 
@@ -216,7 +220,7 @@ def reset_password():
         db.session.rollback()
         return jsonify(error=f'An error occurred {e}'), 500
 
-    except UnmappedInstanceError as e:
+    except UnmappedInstanceError:
         db.session.rollback()
         return jsonify(error='Invalid input data'), 400
 

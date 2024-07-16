@@ -1,7 +1,7 @@
 import { AuthContext } from "@/context/AuthContext";
 import React, { useContext } from "react";
 import { Link } from "react-router-dom";
-import { Popcorn, Search, Settings } from "lucide-react";
+import { Popcorn, Search, CookingPot } from "lucide-react";
 import { Input } from "@/components/ui/input";
 
 const Navbar = () => {
@@ -21,10 +21,10 @@ const Navbar = () => {
             {isAuthenticated ? (
               <>
                 <Link
-                  to="/settings"
+                  to="/kitchen"
                   className="text-gray-800 mt-1 dark:text-white px-3 py-3"
                 >
-                  <Settings className="h-6 sm:h-9" />
+                  <CookingPot className="h-5 sm:h-9 mr-4" />
                   {/* Settings */}
                 </Link>
                 <button
