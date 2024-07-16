@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
-from app.models import User, Subscription, Payment, db
+from app.models import User, UserSubscription, Payment, db
 from app.auth.utils import unique_id
 import requests
 from datetime import datetime, timedelta
@@ -23,11 +23,11 @@ def initialize_payment():
 
         if not subscription_id:
             return jsonify(
-                error = "Subscription id is required"
+                error = "UserSubscription id is required"
             ), 400
 
         # Fetch the subscription details
-        subscription = Subscription.query.get(subscription_id)
+        subscription = UserSubscription.query.get(subscription_id)
         if not subscription:
             return jsonify(error="Subscription not found"), 404
 
