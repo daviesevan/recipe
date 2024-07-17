@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
-from app.models import User, UserSubscription, Payment, db
+from app.models import User, UserSubscription, PaymentTransaction, SubscriptionPlan, db
 from app.auth.utils import unique_id
 import requests
 from datetime import datetime, timedelta
@@ -18,18 +18,16 @@ paymentBp = Blueprint('payments', __name__, url_prefix='/payment')
 def initialize_payment():
     try:
         data = request.json
-        subscription_id = data.get('subscription_id')
+        plan_id = data.get('plan_id')
         is_annual = data.get('is_annual', False)
 
-        if not subscription_id:
-            return jsonify(
-                error = "UserSubscription id is required"
-            ), 400
+        if not plan_id:
+            return jsonify(error="Subscription plan id is required"), 400
 
-        # Fetch the subscription details
-        subscription = UserSubscription.query.get(subscription_id)
-        if not subscription:
-            return jsonify(error="Subscription not found"), 404
+        # Fetch the subscription plan details
+        plan = SubscriptionPlan.query.get(plan_id)
+        if not plan:
+            return jsonify(error="Subscription plan not found"), 404
 
         # Get the current user's id
         user_identity = get_jwt_identity()
@@ -37,22 +35,24 @@ def initialize_payment():
         if not user:
             return jsonify(error="User not found"), 404
 
-        active_payment = Payment.query.filter(
-            Payment.user_id == user.id,
-            Payment.payment_deadline > datetime.now(),
-            (Payment.payment_status == "completed") | (Payment.payment_status == "success")
+        active_subscription = UserSubscription.query.filter(
+            UserSubscription.user_id == user.id,
+            UserSubscription.end_date > datetime.now(),
+            UserSubscription.status == "Active"
         ).first()
 
-        if active_payment:
+        if active_subscription:
             return jsonify(error="You already have an active subscription."), 400
 
         # Calculate the amount
         if is_annual:
-            amount = int(subscription.price * 12 * 0.9 * 100)  # Annual price with 10% discount
-            stored_amount = subscription.price * 12 * 0.9  # Annual price with discount
+            amount = int(plan.price * 12 * 0.9 * 100)  # Annual price with 10% discount
+            stored_amount = plan.price * 12 * 0.9  # Annual price with discount
+            end_date = datetime.now() + timedelta(days=365)
         else:
-            amount = int(subscription.price * 100)  # Monthly price
-            stored_amount = subscription.price  # Monthly price
+            amount = int(plan.price * 100)  # Monthly price
+            stored_amount = plan.price  # Monthly price
+            end_date = datetime.now() + timedelta(days=30)
 
         # Initialize payment with Paystack
         paystack_secret = os.environ['PAYSTACK_SECRET_KEY']
@@ -62,7 +62,6 @@ def initialize_payment():
         }
         payload = {
             "email": user.email,
-            "customer_name":user.fullname,
             "amount": amount,
             "reference": unique_id(), 
             "callback_url": "https://s3gmmbpw-3000.uks1.devtunnels.ms/callback"
@@ -74,13 +73,28 @@ def initialize_payment():
         if response.status_code != 200:
             return jsonify(error="Failed to initialize payment"), 500
 
-        payment = Payment(
+        # Create a new UserSubscription
+        new_subscription = UserSubscription(
             user_id=user.id,
-            subscription_id=subscription.id,
+            plan_id=plan.id,
+            start_date=datetime.now(),
+            end_date=end_date,
+            status="Pending",
+            auto_renew=True
+        )
+
+        db.session.add(new_subscription)
+        db.session.flush()  # This will assign an ID to new_subscription
+
+        # Create a new PaymentTransaction
+        payment = PaymentTransaction(
+            user_id=user.id,
+            subscription_id=new_subscription.id,
             amount=stored_amount,
-            payment_status="pending",
-            reference=payload['reference'],
-            payment_deadline=datetime.now() + timedelta(days=subscription.duration_days if not is_annual else subscription.duration_days * 12)
+            currency="KES",
+            payment_method="Paystack",
+            status="pending",
+            transaction_date=datetime.now()
         )
 
         db.session.add(payment)
@@ -94,7 +108,6 @@ def initialize_payment():
     except Exception as e:
         db.session.rollback()
         return jsonify(error=f"An error occurred: {str(e)}"), 500
-
 
 @paymentBp.post('/verify')
 @jwt_required()
@@ -121,11 +134,14 @@ def verify_payment():
             # Payment was successful, update payment record
             user_identity = get_jwt_identity()
             user = User.query.filter_by(id=user_identity).first()
-            payment = Payment.query.filter_by(user_id=user.id).order_by(Payment.payment_date.desc()).first()
-            payment.payment_status = "completed"
+            payment = PaymentTransaction.query.filter_by(user_id=user.id).order_by(PaymentTransaction.transaction_date.desc()).first()
+            payment.status = "completed"
+            
+            # Update the corresponding UserSubscription
+            subscription = UserSubscription.query.get(payment.subscription_id)
+            subscription.status = "Active"
+            
             db.session.commit()
-
-            print(f'{user.fullname}, {user.email}')
 
             # Include payment details in the response
             payment_details = {
@@ -150,7 +166,6 @@ def verify_payment():
     except Exception as e:
         return jsonify(error=f"An error occurred: {str(e)}"), 500
 
-
 @paymentBp.post('/webhook')
 def webhook():
     try:
@@ -158,18 +173,17 @@ def webhook():
 
         if data['event'] == 'charge.success':
             reference = data['data']['reference']
-            payment = Payment.query.filter_by(reference=reference).first()
+            payment = PaymentTransaction.query.filter_by(status="pending").order_by(PaymentTransaction.transaction_date.desc()).first()
 
             if payment:
-                payment.payment_status = 'success'
-                payment.payment_date = datetime.now()
-
+                payment.status = 'success'
+                
                 user = payment.user
-                subscription = payment.subscription
+                subscription = UserSubscription.query.get(payment.subscription_id)
+                subscription.status = "Active"
 
-                user.searches_remaining = subscription.search_limit
+                # Update user's subscription details
                 user.subscription_id = subscription.id
-                user.subscription_deadline = datetime.now() + timedelta(days=subscription.duration_days)
 
                 db.session.commit()
 

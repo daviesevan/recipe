@@ -1,18 +1,16 @@
 import random
-from flask import (Blueprint, 
-                   jsonify, 
-                   request)
-from .utils import (hashPassword, 
-                    verifyPassword, 
-                    validateEmail)
-from app.models import User, db, Subscription
+from flask import Blueprint, jsonify, request
+from .utils import hashPassword, verifyPassword, validateEmail
+from app.models import User, db, UserSubscription, SubscriptionPlan
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm.exc import UnmappedInstanceError
-from flask_jwt_extended import (create_refresh_token, 
-                                create_access_token, 
-                                jwt_required, 
-                                get_jwt_identity,
-                                verify_jwt_in_request)
+from flask_jwt_extended import (
+    create_refresh_token, 
+    create_access_token, 
+    jwt_required, 
+    get_jwt_identity,
+    verify_jwt_in_request
+)
 import resend
 from datetime import datetime, timedelta
 import os
@@ -23,33 +21,23 @@ from functools import wraps
 auth_bp = Blueprint("authentication", __name__, url_prefix="/auth")
 resend.api_key = os.environ["RESEND_API_KEY"]
 
-
-def get_default_subscription():
+def get_default_subscription_plan():
     # Get the 'free' subscription plan
-    return Subscription.query.filter_by(plan='Free').first()
+    return SubscriptionPlan.query.filter_by(name='Free').first()
 
 def user_required(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
         try:
-            # Verify JWT token in the request headers
             verify_jwt_in_request()
-
-            # Get the current user's identity from the JWT token
             current_user_id = get_jwt_identity()
-
-            # Fetch the admin user from the database based on the current user's identity
             user = User.query.get(current_user_id)
-
             if not user:
                 return jsonify(error='Unauthorized access'), 401
-
-            # If user and authenticated, proceed with the wrapped function
             return func(*args, **kwargs)
-
         except Exception as e:
             return jsonify(error=f'Unauthorized access {e}'), 401
-
+    return wrapper
 
 @auth_bp.post("/signup")
 def signup():
@@ -61,29 +49,45 @@ def signup():
 
         if not fullname or not email or not password:
             return jsonify(error="All values are required"), 403
-        
+
         if not validateEmail(email):
             return jsonify(error="Invalid Email. Try Again!"), 401
-        
+
         if User.query.filter_by(email=email).first():
             return jsonify(error="Email already exists, Try Logging in!"), 401
-        
+
         hashed_password = hashPassword(password)
 
-        # Get the default 'free' subscription
-        default_subscription = get_default_subscription()
-        if not default_subscription:
+        # Get the default 'free' subscription plan
+        default_plan = get_default_subscription_plan()
+        if not default_plan:
             return jsonify(error="Default subscription plan not found"), 500
-        
+
         newUser = User(
             email=email, 
             fullname=fullname, 
-            password=hashed_password,
-            subscription_id=default_subscription.id
+            password=hashed_password
         )
         db.session.add(newUser)
+        db.session.flush()  
+
+        # Create a new UserSubscription for the free plan
+        new_subscription = UserSubscription(
+            user_id=newUser.id,
+            plan_id=default_plan.id,
+            start_date=datetime.now(),
+            end_date=datetime.now() + timedelta(days=14),  # 14 days for free plan
+            status="Active",
+            auto_renew=True
+        )
+        db.session.add(new_subscription)
+        db.session.flush()  
+
+        # Update the newUser subscription_id field
+        newUser.subscription_id = new_subscription.id
+
         db.session.commit()
-        
+
         return jsonify(message=f"{fullname} created successfully"), 201
 
     except IntegrityError as e:
@@ -100,7 +104,6 @@ def signup():
         db.session.rollback()
         print(f"Exception: {e}") 
         return jsonify(error='An error occurred'), 500
-
 @auth_bp.post("/login")
 def login():
     try:
@@ -110,7 +113,7 @@ def login():
 
         user = User.query.filter(User.email == email).first()
         if not user:
-            return jsonify(error="Email doesn't exist! Try logging in!"), 401
+            return jsonify(error="Email doesn't exist! Try signing up!"), 401
         if not verifyPassword(password, user.password):
             return jsonify(error="Wrong password. Please try again!"), 401
         
@@ -122,14 +125,6 @@ def login():
             refresh_token=refresh_token,
             message="Login successful!"
         ), 200
-
-    except IntegrityError as e:
-        db.session.rollback()
-        return jsonify(error=f'An error occurred {e}'), 500
-
-    except UnmappedInstanceError:
-        db.session.rollback()
-        return jsonify(error='Invalid input data'), 400
 
     except Exception as e:
         db.session.rollback()
@@ -144,7 +139,6 @@ def refresh_token():
         return jsonify(access_token=access_token), 200
     except Exception as e:
         return jsonify(error=f'Error refreshing token: {e}'), 401
-
 
 @auth_bp.post('/forgot-password')
 def forgot_password():
@@ -170,21 +164,10 @@ def forgot_password():
         html_content = generate_password_reset_email(user, reset_code)
         response = send_email(user.email, "Your password reset code", html_content)
         return response
-        
-        # return jsonify(message="Password reset code sent to your email"), 200
-
-    except IntegrityError as e:
-        db.session.rollback()
-        return jsonify(error=f'An error occurred {e}'), 500
-
-    except UnmappedInstanceError:
-        db.session.rollback()
-        return jsonify(error='Invalid input data'), 400
 
     except Exception as e:
         db.session.rollback()
         return jsonify(error=f'An error occurred {e}'), 500
-
 
 @auth_bp.post('/reset-password')
 def reset_password():
@@ -215,14 +198,6 @@ def reset_password():
         db.session.commit()
         
         return jsonify(message="Password has been reset successfully"), 200
-
-    except IntegrityError as e:
-        db.session.rollback()
-        return jsonify(error=f'An error occurred {e}'), 500
-
-    except UnmappedInstanceError:
-        db.session.rollback()
-        return jsonify(error='Invalid input data'), 400
 
     except Exception as e:
         db.session.rollback()

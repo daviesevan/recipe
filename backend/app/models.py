@@ -3,7 +3,58 @@ from app.auth.utils import unique_id
 from datetime import datetime
 from sqlalchemy.dialects.postgresql import JSON, ENUM
 from sqlalchemy import Enum
+from sqlalchemy.orm import relationship
 db = SQLAlchemy()
+
+class SubscriptionFeature(db.Model):
+    __tablename__ = 'subscription_feature'
+    id = db.Column(db.Integer, primary_key=True, unique=True, nullable=False, default=unique_id)
+    name = db.Column(db.String(150), nullable=False)
+    description = db.Column(db.Text, nullable=True)
+
+    plan_features = db.relationship('PlanFeature', back_populates='feature')
+    user_usage = db.relationship('UserUsage', back_populates='feature')
+
+
+class SubscriptionPlan(db.Model):
+    __tablename__ = 'subscription_plan'
+    id = db.Column(db.Integer, primary_key=True, unique=True, nullable=False, default=unique_id)
+    name = db.Column(db.String(150), nullable=False)
+    description = db.Column(db.Text, nullable=True)
+    price = db.Column(db.Float, nullable=False)
+    billing_cycle = db.Column(ENUM('Monthly', 'Quarterly', 'Annually', name='billing_cycle'), nullable=False)
+    features = db.Column(JSON, nullable=True)
+
+    user_subscriptions = db.relationship('UserSubscription', back_populates='plan')
+    plan_features = db.relationship('PlanFeature', back_populates='plan')
+    gifts = db.relationship('SubscriptionGifting', back_populates='plan')
+
+class SubscriptionGifting(db.Model):
+    __tablename__ = 'subscription_gifting'
+    id = db.Column(db.Integer, primary_key=True, unique=True, nullable=False, default=unique_id)
+    giver_user_id = db.Column(db.Integer, db.ForeignKey('user.id', name='fk_subscription_gifting_giver'), nullable=False)
+    receiver_email = db.Column(db.String(325), nullable=False)
+    plan_id = db.Column(db.Integer, db.ForeignKey('subscription_plan.id', name='fk_subscription_gifting_plan'), nullable=False)
+    duration = db.Column(db.Integer, nullable=False)  # Duration in months
+    gift_date = db.Column(db.DateTime, default=datetime.now)
+    redeem_status = db.Column(ENUM('Pending', 'Redeemed', 'Expired', name='redeem_status'), nullable=False)
+
+    giver = db.relationship('User', back_populates='gifts_given')
+    plan = db.relationship('SubscriptionPlan', back_populates='gifts')
+    
+class ReferralProgram(db.Model):
+    __tablename__ = 'referral_program'
+    id = db.Column(db.Integer, primary_key=True, unique=True, nullable=False, default=unique_id)
+    referrer_user_id = db.Column(db.Integer, db.ForeignKey('user.id', name='fk_referral_program_referrer'), nullable=False)
+    referred_user_id = db.Column(db.Integer, db.ForeignKey('user.id', name='fk_referral_program_referred'), nullable=False)
+    status = db.Column(ENUM('Pending', 'Completed', 'Cancelled', name='referral_status'), nullable=False)
+    referral_date = db.Column(db.DateTime, default=datetime.now)
+    reward_claimed = db.Column(db.Boolean, default=False)
+
+    referrer = db.relationship('User', foreign_keys=[referrer_user_id], back_populates='referrals_made')
+    referred = db.relationship('User', foreign_keys=[referred_user_id], back_populates='referrals_received')
+
+
 
 class User(db.Model):
     __tablename__ = 'user'
@@ -16,17 +67,23 @@ class User(db.Model):
     reset_token_expiration = db.Column(db.DateTime, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.now)
     updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
-    subscription_id = db.Column(db.Integer, db.ForeignKey('subscription.id', name='fk_subscription_user'), nullable=False)
     searches_remaining = db.Column(db.Integer, default=10)
 
-    subscription = db.relationship('UserSubscription', back_populates='users')
-    payments = db.relationship('Payment', back_populates='user')
+    subscription = db.relationship('UserSubscription', uselist=False, back_populates='user')
+    payments = db.relationship('PaymentTransaction', back_populates='user')
     recipes = db.relationship('Recipe', back_populates='user')
     reviews = db.relationship('Review', back_populates='user')
     favorites = db.relationship('Favorite', back_populates='user')
     meal_plans = db.relationship('MealPlan', back_populates='user')
     shopping_lists = db.relationship('ShoppingList', back_populates='user')
-
+    usage = db.relationship('UserUsage', back_populates='user')
+    tiers = db.relationship('UserTier', back_populates='user')
+    promo_usages = db.relationship('UserPromoUsage', back_populates='user')
+    referrals_made = db.relationship('ReferralProgram', foreign_keys=[ReferralProgram.referrer_user_id], back_populates='referrer')
+    referrals_received = db.relationship('ReferralProgram', foreign_keys=[ReferralProgram.referred_user_id], back_populates='referred')
+    gifts_given = db.relationship('SubscriptionGifting', foreign_keys=[SubscriptionGifting.giver_user_id], back_populates='giver')
+    engagement_metrics = db.relationship('UserEngagementMetric', back_populates='user')
+    feedback = db.relationship('SubscriptionFeedback', back_populates='user')
 
 class Admin(db.Model):
     __tablename__ = 'admin'
@@ -41,17 +98,6 @@ class Admin(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.now)
     updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
 
-class SubscriptionPlan(db.Model):
-    __tablename__ = 'subscription_plan'
-    id = db.Column(db.Integer, primary_key=True, unique=True, nullable=False, default=unique_id)
-    name = db.Column(db.String(150), nullable=False)
-    description = db.Column(db.Text, nullable=True)
-    price = db.Column(db.Float, nullable=False)
-    billing_cycle = db.Column(ENUM('Monthly', 'Quarterly', 'Annually', name='billing_cycle'), nullable=False)
-    features = db.Column(JSON, nullable=True)
-
-    user_subscriptions = db.relationship('UserSubscription', back_populates='plan')
-    plan_features = db.relationship('PlanFeature', back_populates='plan')
 
 
 class UserSubscription(db.Model):
@@ -64,10 +110,10 @@ class UserSubscription(db.Model):
     status = db.Column(ENUM('Active', 'Cancelled', 'Expired', name='subscription_status'), nullable=False)
     auto_renew = db.Column(db.Boolean, default=True)
 
-    user = db.relationship('User', back_populates='subscriptions')
+    user = db.relationship('User', back_populates='subscription')
     plan = db.relationship('SubscriptionPlan', back_populates='user_subscriptions')
     payments = db.relationship('PaymentTransaction', back_populates='subscription')
-
+    feedback = db.relationship('SubscriptionFeedback', back_populates='subscription')
 
 class PaymentTransaction(db.Model):
     __tablename__ = 'payment_transaction'
@@ -82,16 +128,6 @@ class PaymentTransaction(db.Model):
 
     user = db.relationship('User', back_populates='payments')
     subscription = db.relationship('UserSubscription', back_populates='payments')
-
-
-class SubscriptionFeature(db.Model):
-    __tablename__ = 'subscription_feature'
-    id = db.Column(db.Integer, primary_key=True, unique=True, nullable=False, default=unique_id)
-    name = db.Column(db.String(150), nullable=False)
-    description = db.Column(db.Text, nullable=True)
-
-    plan_features = db.relationship('PlanFeature', back_populates='feature')
-    user_usage = db.relationship('UserUsage', back_populates='feature')
 
 
 class PlanFeature(db.Model):
@@ -139,17 +175,6 @@ class UserPromoUsage(db.Model):
     promocode = db.relationship('PromotionalCode', back_populates='user_promo_usages')
 
 
-class ReferralProgram(db.Model):
-    __tablename__ = 'referral_program'
-    id = db.Column(db.Integer, primary_key=True, unique=True, nullable=False, default=unique_id)
-    referrer_user_id = db.Column(db.Integer, db.ForeignKey('user.id', name='fk_referral_program_referrer'), nullable=False)
-    referred_user_id = db.Column(db.Integer, db.ForeignKey('user.id', name='fk_referral_program_referred'), nullable=False)
-    status = db.Column(ENUM('Pending', 'Completed', 'Cancelled', name='referral_status'), nullable=False)
-    referral_date = db.Column(db.DateTime, default=datetime.now)
-    reward_claimed = db.Column(db.Boolean, default=False)
-
-    referrer = db.relationship('User', foreign_keys=[referrer_user_id], back_populates='referrals_made')
-    referred = db.relationship('User', foreign_keys=[referred_user_id], back_populates='referrals_received')
 
 
 class SubscriptionTier(db.Model):
@@ -182,19 +207,7 @@ class ContentAccess(db.Model):
     tier = db.relationship('SubscriptionTier', back_populates='content_access')
 
 
-class SubscriptionGifting(db.Model):
-    __tablename__ = 'subscription_gifting'
-    id = db.Column(db.Integer, primary_key=True, unique=True, nullable=False, default=unique_id)
-    giver_user_id = db.Column(db.Integer, db.ForeignKey('user.id', name='fk_subscription_gifting_giver'), nullable=False)
-    receiver_email = db.Column(db.String(325), nullable=False)
-    plan_id = db.Column(db.Integer, db.ForeignKey('subscription_plan.id', name='fk_subscription_gifting_plan'), nullable=False)
-    duration = db.Column(db.Integer, nullable=False)  # Duration in months
-    gift_date = db.Column(db.DateTime, default=datetime.now)
-    redeem_status = db.Column(ENUM('Pending', 'Redeemed', 'Expired', name='redeem_status'), nullable=False)
 
-    giver = db.relationship('User', back_populates='gifts_given')
-    plan = db.relationship('SubscriptionPlan', back_populates='gifts')
-    
 
 class UserEngagementMetric(db.Model):
     __tablename__ = 'user_engagement_metric'

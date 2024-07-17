@@ -76,7 +76,7 @@ def signup():
         try:
             # Send welcome email to the newly created admin
             html_content = generate_welcome_email(fullname)
-            response = send_email(email, "Welcome to our platform", html_content)
+            response = send_email(email, "Welcome to our platform", html_content)  # noqa: F841
                     
             return jsonify(message=f"{fullname} created successfully and welcome email sent"), 201
         except Exception as e:

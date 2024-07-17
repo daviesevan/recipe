@@ -1,44 +1,93 @@
 from flask import Blueprint, request, jsonify
-from app.models import Subscription, db
+from app.models import SubscriptionPlan, db
+from flask_jwt_extended import jwt_required
+# from datetime import datetime
 
 subscription_bp = Blueprint('subscription', __name__, url_prefix='/admin/subscription')
 
 @subscription_bp.post('/create')
-def create_subscription():
+@jwt_required()  
+def create_subscription_plan():
     data = request.json
-    plan = data.get('plan')
+    name = data.get('name')
+    description = data.get('description')
     price = data.get('price')
-    search_limit = data.get('search_limit')
+    billing_cycle = data.get('billing_cycle')
+    features = data.get('features')
 
     try:
-        if not Subscription.query.filter_by(plan=plan).first():
-            new_subscription = Subscription(
-                plan=plan,
-                search_limit=search_limit,
-                price=price
+        if not SubscriptionPlan.query.filter_by(name=name).first():
+            new_plan = SubscriptionPlan(
+                name=name,
+                description=description,
+                price=price,
+                billing_cycle=billing_cycle,
+                features=features
             )
-        db.session.add(new_subscription)
-        db.session.commit()
-        return jsonify(message=f"{plan} subscriptions created successfully"), 201
+            db.session.add(new_plan)
+            db.session.commit()
+            return jsonify(message=f"{name} subscription plan created successfully"), 201
+        else:
+            return jsonify(error=f"Subscription plan '{name}' already exists"), 400
     except Exception as e:
         db.session.rollback()
         print(f"Exception: {e}")
-        return jsonify(error="An error occurred while creating dummy subscriptions"), 500
+        return jsonify(error="An error occurred while creating the subscription plan"), 500
 
 @subscription_bp.get('/')
-def get_subscriptions():
+@jwt_required()  
+def get_subscription_plans():
     try:
-        subscriptions = Subscription.query.all()
-        subscriptions_data = [
+        plans = SubscriptionPlan.query.all()
+        plans_data = [
             {
-                "id": sub.id,
-                "plan": sub.plan,
-                "search_limit": sub.search_limit,
-                "price": sub.price,
-                "duration_days": sub.duration_days
-            } for sub in subscriptions
+                "id": plan.id,
+                "name": plan.name,
+                "description": plan.description,
+                "price": plan.price,
+                "billing_cycle": plan.billing_cycle,
+                "features": plan.features
+            } for plan in plans
         ]
-        return jsonify(subscriptions=subscriptions_data), 200
+        return jsonify(subscription_plans=plans_data), 200
     except Exception as e:
         print(f"Exception: {e}")
-        return jsonify(error="An error occurred while fetching subscriptions"), 500
+        return jsonify(error="An error occurred while fetching subscription plans"), 500
+
+@subscription_bp.put('/<int:plan_id>')
+@jwt_required()
+def update_subscription_plan(plan_id):
+    data = request.json
+    try:
+        plan = SubscriptionPlan.query.get(plan_id)
+        if not plan:
+            return jsonify(error="Subscription plan not found"), 404
+
+        plan.name = data.get('name', plan.name)
+        plan.description = data.get('description', plan.description)
+        plan.price = data.get('price', plan.price)
+        plan.billing_cycle = data.get('billing_cycle', plan.billing_cycle)
+        plan.features = data.get('features', plan.features)
+
+        db.session.commit()
+        return jsonify(message="Subscription plan updated successfully"), 200
+    except Exception as e:
+        db.session.rollback()
+        print(f"Exception: {e}")
+        return jsonify(error="An error occurred while updating the subscription plan"), 500
+
+@subscription_bp.delete('/<int:plan_id>')
+@jwt_required()
+def delete_subscription_plan(plan_id):
+    try:
+        plan = SubscriptionPlan.query.get(plan_id)
+        if not plan:
+            return jsonify(error="Subscription plan not found"), 404
+
+        db.session.delete(plan)
+        db.session.commit()
+        return jsonify(message="Subscription plan deleted successfully"), 200
+    except Exception as e:
+        db.session.rollback()
+        print(f"Exception: {e}")
+        return jsonify(error="An error occurred while deleting the subscription plan"), 500
